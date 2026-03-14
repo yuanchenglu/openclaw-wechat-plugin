@@ -4,7 +4,7 @@
 # ============================================================================
 # 
 # 使用方法：
-#   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-client/main/release/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
 #   
 # 或指定配置：
 #   RELAY_URL=wss://your-server.com/ws-channel curl -fsSL ... | sh
@@ -82,7 +82,7 @@ check_pip() {
 download_client() {
     print_step "3/4" "下载客户端..."
     
-    local repo_url="https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-client/main"
+    local repo_url="https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main"
     local temp_dir=$(mktemp -d)
     
     mkdir -p "$PLUGIN_DIR"
