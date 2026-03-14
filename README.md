@@ -2,7 +2,7 @@
 
 > 让你通过微信与自己本地部署的 OpenClaw 无缝对话。
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/yuanchenglu/openclaw-wechat-plugin)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](http://claw-wechat.clawadmin.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -26,7 +26,7 @@
 ### 安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+curl -fsSL http://claw-wechat.clawadmin.org/install.sh | sh
 ```
 
 ### 启动
@@ -101,7 +101,7 @@ RELAY_URL=wss://your-server.com/ws-channel ~/.openclaw/wechat-channel/start.sh
 ## 项目结构
 
 ```
-openclaw-wechat-plugin/
+openclaw-wechat-plugin 
 ├── plugin/
 │   ├── src/client.py      # 客户端主程序
 │   └── requirements.txt   # Python 依赖
@@ -117,7 +117,7 @@ openclaw-wechat-plugin/
 
 ## 支持
 
-- **问题反馈**: [GitHub Issues](https://github.com/yuanchenglu/openclaw-wechat-plugin/issues)
+- **问题反馈**: [GitHub Issues](http://claw-wechat.clawadmin.org/issues)
 - **邮箱**: services@7color.vip
 
 ---

@@ -483,7 +483,7 @@
         <p class="subtitle">让普通用户通过微信服务号，与自己本地部署的 OpenClaw 无缝对话。<br>一键安装，扫码授权，随时对话，数据本地。</p>
 
         <div class="install-box" id="install">
-            <code>curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh</code>
+            <code>curl -fsSL http://claw-wechat.clawadmin.org/install.sh | sh</code>
             <button class="copy-btn" onclick="copyInstallCmd()">复制</button>
         </div>
 
@@ -572,7 +572,7 @@
                 <div class="step-content">
                     <h3>一键安装</h3>
                     <p>在终端运行安装命令，自动下载并配置插件：</p>
-                    <code>curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh</code>
+                    <code>curl -fsSL http://claw-wechat.clawadmin.org/install.sh | sh</code>
                 </div>
             </div>
             <div class="step">
@@ -663,7 +663,7 @@
     <script>
         // 复制安装命令
         function copyInstallCmd() {
-            const cmd = 'curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh';
+            const cmd = 'curl -fsSL http://claw-wechat.clawadmin.org/install.sh | sh';
             navigator.clipboard.writeText(cmd).then(() => {
                 const btn = document.querySelector('.copy-btn');
                 btn.textContent = '已复制';

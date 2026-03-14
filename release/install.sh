@@ -4,7 +4,7 @@
 # ============================================================================
 # 
 # 使用方法：
-#   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+#   curl -fsSL http://claw-wechat.clawadmin.org/install.sh | sh
 #   
 # 或指定配置：
 #   RELAY_URL=wss://your-server.com/ws-channel curl -fsSL ... | sh
