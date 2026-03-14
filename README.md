@@ -1,9 +1,11 @@
-# OpenClaw 微信频道客户端
+# OpenClaw 微信频道插件
 
 > 让你通过微信与自己本地部署的 OpenClaw 无缝对话。
 
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](http://claw-wechat.clawadmin.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**官网**: http://claw-wechat.clawadmin.org
 
 ---
 
@@ -101,7 +103,7 @@ RELAY_URL=wss://your-server.com/ws-channel ~/.openclaw/wechat-channel/start.sh
 ## 项目结构
 
 ```
-openclaw-wechat-plugin 
+openclaw-wechat-plugin/
 ├── plugin/
 │   ├── src/client.py      # 客户端主程序
 │   └── requirements.txt   # Python 依赖
@@ -117,7 +119,9 @@ openclaw-wechat-plugin
 
 ## 支持
 
-- **问题反馈**: [GitHub Issues](http://claw-wechat.clawadmin.org/issues)
+- **官网**: http://claw-wechat.clawadmin.org
+- **GitHub**: https://github.com/yuanchenglu/openclaw-wechat-plugin
+- **问题反馈**: https://github.com/yuanchenglu/openclaw-wechat-plugin/issues
 - **邮箱**: services@7color.vip
 
 ---
