@@ -1,0 +1,3 @@
+# OpenClaw 微信频道客户端依赖
+websockets>=12.0
+httpx>=0.26.0
