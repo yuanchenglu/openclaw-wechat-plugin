@@ -27,30 +27,33 @@
 
    macOS/Linux:
    # 方式一（Cloudflare CDN，全球加速）
-   curl -fsSL https://wechat.clawadmin.org/install.sh | sh
+   curl -fsSL https://wechat.clawadmin.org/release/install.sh | sh
    # 方式二（GitHub 备用）
    curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
    # 方式三（国内备用）
-   curl -fsSL https://wechat.clawadmin.org/install.sh | sh
-   
+   curl -fsSL https://claw-wechat.7color.vip/release/install.sh | sh
+    
    Windows PowerShell:
    # 方式一（Cloudflare CDN，全球加速）
-   irm https://wechat.clawadmin.org/install.ps1 | iex
+   irm https://wechat.clawadmin.org/release/install.ps1 | iex
    # 方式二（GitHub 备用）
    irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
    # 方式三（国内备用）
-   irm https://wechat.clawadmin.org/install.ps1 | iex
+   irm https://claw-wechat.7color.vip/release/install.ps1 | iex
 
 3. 安装完成后，启动客户端：
    macOS/Linux: ~/.openclaw/wechat-channel/start.sh
    Windows: ~/.openclaw/wechat-channel/start.ps1
 
-4. 告诉用户扫码授权链接，完成绑定。
+4. 启动后会显示授权链接。请将授权链接发送给用户，提示用户：
+   "请点击此链接并用微信扫码，关注「七彩科技AI」服务号即可完成绑定。"
 
 如果遇到问题，请自行解决，除非必须要用户操作，用户只要结果。
 ```
 
 等待 OpenClaw 执行安装，然后按提示扫码授权即可。
+
+> ⚠️ **重要提示**：OpenClaw 执行安装命令时会弹出授权确认框，请点击「允许」。这是安全机制，需要用户授权才能执行安装。建议在电脑前操作，方便及时确认。
 
 ---
 
@@ -61,25 +64,25 @@
 **macOS / Linux：**
 ```bash
 # 推荐（Cloudflare CDN，全球加速）
-curl -fsSL https://wechat.clawadmin.org/install.sh | sh
+curl -fsSL https://wechat.clawadmin.org/release/install.sh | sh
 
 # 备用（GitHub）
 curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
 
 # 备用（国内）
-curl -fsSL https://wechat.clawadmin.org/install.sh | sh
+curl -fsSL https://claw-wechat.7color.vip/release/install.sh | sh
 ```
 
 **Windows PowerShell：**
 ```powershell
 # 推荐（Cloudflare CDN，全球加速）
-irm https://wechat.clawadmin.org/install.ps1 | iex
+irm https://wechat.clawadmin.org/release/install.ps1 | iex
 
 # 备用（GitHub）
 irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
 
 # 备用（国内）
-irm https://wechat.clawadmin.org/install.ps1 | iex
+irm https://claw-wechat.7color.vip/release/install.ps1 | iex
 ```
 
 ---
@@ -138,6 +141,10 @@ RELAY_URL=wss://你的服务器/ws-channel ~/.openclaw/wechat-channel/start.sh
 | `OPENCLAW_URL` | `http://127.0.0.1:18789` | OpenClaw 服务地址 |
 | `RELAY_URL` | `wss://claw.7color.vip/ws-channel` | 中转服务地址 |
 | `INSTANCE_TYPE` | `bare` | 实例类型 |
+
+### 对话安装时弹出授权确认怎么办？
+
+OpenClaw 执行安装命令时会弹出授权确认框，请点击「允许」。这是安全机制，需要用户授权才能执行安装。建议在电脑前操作，方便及时确认。
 
 ---
 
