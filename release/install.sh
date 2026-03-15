@@ -4,10 +4,10 @@
 # ============================================================================
 # 
 # 使用方法：
-#   curl -fsSL http://claw-wechat.clawadmin.org/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
 #   
 # 或指定配置：
-#   RELAY_URL=wss://your-server.com/ws-channel curl -fsSL ... | sh
+#   OPENCLAW_URL=http://127.0.0.1:18789 curl -fsSL ... | sh
 #
 # 支持系统：macOS, Linux, Windows (WSL)
 # ============================================================================
@@ -16,8 +16,8 @@ set -e
 
 VERSION="1.2.0"
 PLUGIN_DIR="${PLUGIN_DIR:-$HOME/.openclaw/wechat-channel}"
-OPENCLAW_URL="${OPENCLAW_URL:-http://localhost:8080}"
-RELAY_URL="${RELAY_URL:-wss://claw.7color.vip/ws-channel}"
+OPENCLAW_URL="${OPENCLAW_URL:-http://127.0.0.1:18789}"
+RELAY_URL="${RELAY_URL:-wss://claw-wechat.7color.vip/ws-channel}"
 INSTANCE_TYPE="${INSTANCE_TYPE:-bare}"
 
 RED='\033[0;31m'

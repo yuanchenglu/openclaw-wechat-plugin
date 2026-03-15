@@ -2,65 +2,87 @@
 
 > 让你通过微信与自己本地部署的 OpenClaw 无缝对话。
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](http://claw-wechat.clawadmin.org)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://claw-wechat.7color.vip)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**官网**: http://claw-wechat.clawadmin.org
+**官网**: [claw-wechat.7color.vip](https://claw-wechat.7color.vip)
 
 ---
 
-## 功能特点
+## 安装方法
 
-- **本地运行** - OpenClaw 运行在你自己的电脑上，数据完全本地存储
-- **微信对话** - 通过微信服务号与自己的 OpenClaw 对话
-- **NAT 穿透** - WebSocket 长连接自动穿透内网
-- **一键安装** - 运行一条命令即可完成安装
+### 对话安装（推荐）
 
----
+打开 OpenClaw 对话框（http://127.0.0.1:18789/），复制以下内容粘贴发送：
 
-## 快速开始
+```
+请帮我安装微信频道插件。
 
-### 系统要求
+安装要求：
+- Python 3.8 或更高版本（请先确认已安装）
 
-- Python 3.8 或更高版本
-- OpenClaw 已部署并运行
+安装步骤：
+1. 检测当前操作系统（macOS/Linux/Windows）
+2. 执行安装命令（按顺序尝试，成功即停止）：
 
-### 安装
+   macOS/Linux:
+   # 方式一（推荐，国内快）
+   curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
+   # 方式二（GitHub 备用）
+   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+   
+   Windows PowerShell:
+   # 方式一（推荐，国内快）
+   irm https://claw-wechat.7color.vip/install.ps1 | iex
+   # 方式二（GitHub 备用）
+   irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
 
-```bash
-curl -fsSL http://claw-wechat.clawadmin.org/install.sh | sh
+3. 安装完成后，启动客户端：
+   macOS/Linux: ~/.openclaw/wechat-channel/start.sh
+   Windows: ~/.openclaw/wechat-channel/start.ps1
+
+4. 告诉用户扫码授权链接，完成绑定。
+
+如果遇到问题，请给出具体的错误信息和解决建议。
 ```
 
-### 启动
+等待 OpenClaw 执行安装，然后按提示扫码授权即可。
+
+---
+
+### 命令行安装
+
+如果熟悉终端，可直接运行：
+
+**macOS / Linux：**
+```bash
+# 推荐（国内快）
+curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
+
+# 备用（GitHub）
+curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+```
+
+**Windows PowerShell：**
+```powershell
+# 推荐（国内快）
+irm https://claw-wechat.7color.vip/install.ps1 | iex
+
+# 备用（GitHub）
+irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
+```
+
+---
+
+## 启动与授权
+
+安装完成后，运行：
 
 ```bash
-# 默认配置
 ~/.openclaw/wechat-channel/start.sh
-
-# 指定 OpenClaw 地址
-OPENCLAW_URL=http://localhost:3000 ~/.openclaw/wechat-channel/start.sh
-
-# 指定中转服务地址
-RELAY_URL=wss://your-server.com/ws-channel ~/.openclaw/wechat-channel/start.sh
 ```
 
-### 授权
-
-首次运行会显示二维码：
-
-1. 使用微信扫描二维码
-2. 关注服务号完成授权
-3. 授权成功后即可在微信中对话
-
----
-
-## 配置选项
-
-| 环境变量 | 默认值 | 说明 |
-|---------|--------|------|
-| `OPENCLAW_URL` | `http://localhost:8080` | OpenClaw 服务地址 |
-| `RELAY_URL` | `wss://claw.7color.vip/ws-channel` | 中转服务地址 |
-| `INSTANCE_TYPE` | `bare` | 实例类型 |
+首次运行会显示授权链接，用微信扫码关注「七彩科技AI」服务号即可完成绑定。
 
 ---
 
@@ -79,6 +101,36 @@ RELAY_URL=wss://your-server.com/ws-channel ~/.openclaw/wechat-channel/start.sh
 
 ---
 
+## 常见问题
+
+### OpenClaw 的默认地址是什么？
+
+OpenClaw 默认运行在 `http://127.0.0.1:18789/`
+
+### 如何指定 OpenClaw 地址？
+
+如果你的 OpenClaw 运行在其他地址：
+
+```bash
+OPENCLAW_URL=http://localhost:你的端口 ~/.openclaw/wechat-channel/start.sh
+```
+
+### 如何指定中转服务地址？
+
+```bash
+RELAY_URL=wss://你的服务器/ws-channel ~/.openclaw/wechat-channel/start.sh
+```
+
+### 配置选项有哪些？
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| `OPENCLAW_URL` | `http://127.0.0.1:18789` | OpenClaw 服务地址 |
+| `RELAY_URL` | `wss://claw-wechat.7color.vip/ws-channel` | 中转服务地址 |
+| `INSTANCE_TYPE` | `bare` | 实例类型 |
+
+---
+
 ## 隐私安全
 
 - OpenClaw 运行在你的本地电脑上
@@ -87,41 +139,10 @@ RELAY_URL=wss://your-server.com/ws-channel ~/.openclaw/wechat-channel/start.sh
 
 ---
 
-## 自建服务
-
-如果你想自建中转服务：
-
-1. 你需要一台公网服务器
-2. 部署 WebSocket 中转服务
-3. 配置微信服务号回调
-4. 修改 `RELAY_URL` 指向你的服务器
-
-服务器端代码暂不开源，如需商业合作请联系：services@7color.vip
-
----
-
-## 项目结构
-
-```
-openclaw-wechat-plugin/
-├── plugin/
-│   ├── src/client.py      # 客户端主程序
-│   └── requirements.txt   # Python 依赖
-├── release/
-│   ├── install.sh         # 安装脚本
-│   └── version.json       # 版本信息
-├── landing-page/
-│   └── index.html         # 官网落地页
-└── README.md
-```
-
----
-
 ## 支持
 
-- **官网**: http://claw-wechat.clawadmin.org
+- **官网**: [claw-wechat.7color.vip](https://claw-wechat.7color.vip)
 - **GitHub**: https://github.com/yuanchenglu/openclaw-wechat-plugin
-- **问题反馈**: https://github.com/yuanchenglu/openclaw-wechat-plugin/issues
 - **邮箱**: services@7color.vip
 
 ---
@@ -130,22 +151,4 @@ openclaw-wechat-plugin/
 
 MIT License
 
-Copyright (c) 2026
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Copyright (c) 2026 七彩科技

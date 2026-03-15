@@ -613,12 +613,12 @@ async def main():
     parser = argparse.ArgumentParser(description="OpenClaw 微信频道客户端")
     parser.add_argument(
         "--openclaw-url",
-        default=os.getenv("OPENCLAW_URL", "http://localhost:8080"),
-        help="OpenClaw 服务地址"
+        default=os.getenv("OPENCLAW_URL", "http://127.0.0.1:18789"),
+        help="OpenClaw 服务地址（默认 18789，即 OpenClaw Gateway）"
     )
     parser.add_argument(
         "--relay-url",
-        default=os.getenv("RELAY_URL", "wss://claw.7color.vip/ws-channel"),
+        default=os.getenv("RELAY_URL", "wss://claw-wechat.7color.vip/ws-channel"),
         help="中转服务 WebSocket 地址"
     )
     parser.add_argument(
