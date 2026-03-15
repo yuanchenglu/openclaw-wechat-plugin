@@ -82,15 +82,26 @@ check_pip() {
 download_client() {
     print_step "3/4" "下载客户端..."
     
-    local repo_url="https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main"
-    local temp_dir=$(mktemp -d)
+    # 下载源列表（按优先级排序）
+    local sources=(
+        "https://wechat.clawadmin.org"
+        "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main"
+        "https://claw-wechat.7color.vip"
+    )
     
     mkdir -p "$PLUGIN_DIR"
     
-    curl -fsSL "$repo_url/plugin/src/client.py" -o "$PLUGIN_DIR/client.py"
-    curl -fsSL "$repo_url/plugin/requirements.txt" -o "$PLUGIN_DIR/requirements.txt"
+    # 尝试从多个源下载
+    for base_url in "${sources[@]}"; do
+        if curl -fsSL "$base_url/plugin/src/client.py" -o "$PLUGIN_DIR/client.py" 2>/dev/null && \
+           curl -fsSL "$base_url/plugin/requirements.txt" -o "$PLUGIN_DIR/requirements.txt" 2>/dev/null; then
+            print_success "客户端已下载到: $PLUGIN_DIR (来源: $base_url)"
+            return 0
+        fi
+    done
     
-    print_success "客户端已下载到: $PLUGIN_DIR"
+    print_error "所有下载源均失败，请检查网络连接"
+    exit 1
 }
 
 install_dependencies() {
@@ -140,10 +151,6 @@ print_completion() {
     echo ""
     echo "使用方法："
     echo "  $PLUGIN_DIR/start.sh"
-    echo ""
-    echo "自定义配置："
-    echo "  OPENCLAW_URL=http://localhost:3000 $PLUGIN_DIR/start.sh"
-    echo "  RELAY_URL=wss://your-server.com/ws-channel $PLUGIN_DIR/start.sh"
     echo ""
 }
 

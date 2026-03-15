@@ -1,5 +1,5 @@
-# 同步安装脚本到 R2 和 ECS
-# 每次 push 到 main 分支时，自动同步 install.sh 和 install.ps1 到多个下载源
+# 完整同步仓库到 R2 和 ECS
+# 每次 push 到 main 分支时，自动同步整个仓库到多个下载源
 # 
 # 需要配置的 GitHub Secrets:
 # - CLOUDFLARE_API_TOKEN: Cloudflare API Token (R2 读写权限)
@@ -8,15 +8,12 @@
 # - ECS_HOST: ECS 服务器地址 (默认 121.40.150.39)
 # - ECS_USER: ECS 用户名 (默认 root)
 
-name: Sync Install Scripts
+name: Sync Source to R2 and ECS
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'release/install.sh'
-      - 'release/install.ps1'
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:
 
 env:
   R2_BUCKET: foralluser
@@ -36,19 +33,22 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo "📤 Uploading to Cloudflare R2..."
+          echo "📤 Uploading repository to Cloudflare R2..."
           
-          # install.sh
-          curl -X PUT \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/r2/buckets/${R2_BUCKET}/objects/install.sh" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            --data-binary "@release/install.sh"
-          
-          # install.ps1
-          curl -X PUT \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/r2/buckets/${R2_BUCKET}/objects/install.ps1" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            --data-binary "@release/install.ps1"
+          # 遍历所有文件并上传，排除 .git 和 .github 目录
+          find . -type f \
+            ! -path './.git/*' \
+            ! -path './.github/*' \
+            ! -name '.gitignore' \
+            | while read file; do
+              # 移除开头的 ./
+              key="${file#./}"
+              echo "  ↑ $key"
+              curl -s -X PUT \
+                "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/r2/buckets/${R2_BUCKET}/objects/${key}" \
+                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                --data-binary "@$file"
+            done
           
           echo "✅ R2 upload complete"
 
@@ -58,44 +58,55 @@ jobs:
           ECS_HOST: ${{ secrets.ECS_HOST || '121.40.150.39' }}
           ECS_USER: ${{ secrets.ECS_USER || 'root' }}
         run: |
-          echo "📤 Uploading to ECS..."
+          echo "📤 Uploading repository to ECS..."
           
-          # 设置 SSH 密钥
           mkdir -p ~/.ssh
           echo "${ECS_SSH_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
-          # 上传文件
-          scp -o StrictHostKeyChecking=no \
-            release/install.sh release/install.ps1 \
-            ${ECS_USER}@${ECS_HOST}:${ECS_PATH}/
+          # 使用 rsync 同步整个仓库，排除 .git 和 .github
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.gitignore' \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ./ ${ECS_USER}@${ECS_HOST}:${ECS_PATH}/
           
           # 设置权限
           ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} \
-            "chown www:www ${ECS_PATH}/install.sh ${ECS_PATH}/install.ps1 && chmod 644 ${ECS_PATH}/install.sh ${ECS_PATH}/install.ps1"
+            "chown -R www:www ${ECS_PATH} && find ${ECS_PATH} -type f -exec chmod 644 {} \; && find ${ECS_PATH} -type d -exec chmod 755 {} \;"
           
           echo "✅ ECS upload complete"
 
-      - name: Verify uploads
+      - name: Verify deployment
         run: |
-          echo "🔍 Verifying uploads..."
+          echo "🔍 Verifying deployment..."
           
-          # 验证 R2
-          R2_SH=$(curl -s -o /dev/null -w "%{http_code}" https://${R2_PUBLIC_DOMAIN}/install.sh)
-          R2_PS1=$(curl -s -o /dev/null -w "%{http_code}" https://${R2_PUBLIC_DOMAIN}/install.ps1)
+          # 验证关键文件
+          FILES=(
+            "plugin/src/client.py"
+            "plugin/requirements.txt"
+            "release/install.sh"
+            "release/install.ps1"
+          )
           
-          # 验证 ECS
-          ECS_SH=$(curl -s -o /dev/null -w "%{http_code}" https://claw-wechat.7color.vip/install.sh)
-          ECS_PS1=$(curl -s -o /dev/null -w "%{http_code}" https://claw-wechat.7color.vip/install.ps1)
+          echo "| File | R2 Status | ECS Status |"
+          echo "|------|-----------|------------|"
           
-          echo "| Source       | install.sh | install.ps1 |"
-          echo "|--------------|------------|-------------|"
-          echo "| R2 (CDN)     | ${R2_SH}         | ${R2_PS1}          |"
-          echo "| ECS (Backup) | ${ECS_SH}         | ${ECS_PS1}          |"
+          ALL_OK=true
+          for file in "${FILES[@]}"; do
+            R2_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${R2_PUBLIC_DOMAIN}/${file}")
+            ECS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://claw-wechat.7color.vip/${file}")
+            echo "| $file | ${R2_STATUS} | ${ECS_STATUS} |"
+            
+            if [ "$R2_STATUS" != "200" ] || [ "$ECS_STATUS" != "200" ]; then
+              ALL_OK=false
+            fi
+          done
           
-          if [ "$R2_SH" != "200" ] || [ "$R2_PS1" != "200" ] || [ "$ECS_SH" != "200" ] || [ "$ECS_PS1" != "200" ]; then
-            echo "❌ Some uploads failed!"
+          if [ "$ALL_OK" != "true" ]; then
+            echo "❌ Verification failed!"
             exit 1
           fi
           
-          echo "✅ All uploads verified!"
+          echo "✅ All deployments verified!"

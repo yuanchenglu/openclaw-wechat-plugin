@@ -63,24 +63,38 @@ function Check-Pip {
 function Download-Client {
     Write-Host "[3/4] 下载客户端..." -ForegroundColor Blue
     
-    $repoUrl = "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main"
+    # 下载源列表（按优先级排序）
+    $sources = @(
+        "https://wechat.clawadmin.org",
+        "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main",
+        "https://claw-wechat.7color.vip"
+    )
     
     # 创建目录
     if (-not (Test-Path $PLUGIN_DIR)) {
         New-Item -ItemType Directory -Path $PLUGIN_DIR -Force | Out-Null
     }
     
-    # 下载文件
-    $clientUrl = "$repoUrl/plugin/src/client.py"
-    $requirementsUrl = "$repoUrl/plugin/requirements.txt"
-    
-    try {
-        Invoke-WebRequest -Uri $clientUrl -OutFile "$PLUGIN_DIR\client.py" -UseBasicParsing
-        Invoke-WebRequest -Uri $requirementsUrl -OutFile "$PLUGIN_DIR\requirements.txt" -UseBasicParsing
-        Write-Host "✅ 客户端已下载到: $PLUGIN_DIR" -ForegroundColor Green
+    # 尝试从多个源下载
+    $downloaded = $false
+    foreach ($baseUrl in $sources) {
+        $clientUrl = "$baseUrl/plugin/src/client.py"
+        $requirementsUrl = "$baseUrl/plugin/requirements.txt"
+        
+        try {
+            Invoke-WebRequest -Uri $clientUrl -OutFile "$PLUGIN_DIR\client.py" -UseBasicParsing -TimeoutSec 30
+            Invoke-WebRequest -Uri $requirementsUrl -OutFile "$PLUGIN_DIR\requirements.txt" -UseBasicParsing -TimeoutSec 30
+            Write-Host "✅ 客户端已下载到: $PLUGIN_DIR (来源: $baseUrl)" -ForegroundColor Green
+            $downloaded = $true
+            break
+        }
+        catch {
+            Write-Host "  ⚠️ $baseUrl 下载失败，尝试下一个源..." -ForegroundColor Yellow
+        }
     }
-    catch {
-        Write-Host "❌ 下载失败: $_" -ForegroundColor Red
+    
+    if (-not $downloaded) {
+        Write-Host "❌ 所有下载源均失败，请检查网络连接" -ForegroundColor Red
         exit 1
     }
 }
@@ -147,9 +161,6 @@ function Print-Completion {
     Write-Host "使用方法："
     Write-Host "  PowerShell:  $PLUGIN_DIR\start.ps1"
     Write-Host "  CMD:         powershell -File $PLUGIN_DIR\start.ps1"
-    Write-Host ""
-    Write-Host "自定义配置："
-    Write-Host "  `$env:OPENCLAW_URL='http://localhost:3000'; $PLUGIN_DIR\start.ps1"
     Write-Host ""
 }
 

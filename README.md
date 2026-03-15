@@ -2,10 +2,10 @@
 
 > 让你通过微信与自己本地部署的 OpenClaw 无缝对话。
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://claw-wechat.7color.vip)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://wechat.clawadmin.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**官网**: [claw-wechat.7color.vip](https://claw-wechat.7color.vip)
+**官网**: [wechat.clawadmin.org](https://wechat.clawadmin.org)
 
 ---
 
@@ -31,7 +31,7 @@
    # 方式二（GitHub 备用）
    curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
    # 方式三（国内备用）
-   curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
+   curl -fsSL https://wechat.clawadmin.org/install.sh | sh
    
    Windows PowerShell:
    # 方式一（Cloudflare CDN，全球加速）
@@ -39,7 +39,7 @@
    # 方式二（GitHub 备用）
    irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
    # 方式三（国内备用）
-   irm https://claw-wechat.7color.vip/install.ps1 | iex
+   irm https://wechat.clawadmin.org/install.ps1 | iex
 
 3. 安装完成后，启动客户端：
    macOS/Linux: ~/.openclaw/wechat-channel/start.sh
@@ -67,7 +67,7 @@ curl -fsSL https://wechat.clawadmin.org/install.sh | sh
 curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
 
 # 备用（国内）
-curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
+curl -fsSL https://wechat.clawadmin.org/install.sh | sh
 ```
 
 **Windows PowerShell：**
@@ -79,7 +79,7 @@ irm https://wechat.clawadmin.org/install.ps1 | iex
 irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
 
 # 备用（国内）
-irm https://claw-wechat.7color.vip/install.ps1 | iex
+irm https://wechat.clawadmin.org/install.ps1 | iex
 ```
 
 ---
@@ -151,7 +151,7 @@ RELAY_URL=wss://你的服务器/ws-channel ~/.openclaw/wechat-channel/start.sh
 
 ## 支持
 
-- **官网**: [claw-wechat.7color.vip](https://claw-wechat.7color.vip)
+- **官网**: [wechat.clawadmin.org](https://wechat.clawadmin.org)
 - **GitHub**: https://github.com/yuanchenglu/openclaw-wechat-plugin
 - **邮箱**: services@7color.vip
 
