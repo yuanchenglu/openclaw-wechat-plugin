@@ -136,7 +136,7 @@ RELAY_URL=wss://你的服务器/ws-channel ~/.openclaw/wechat-channel/start.sh
 | 环境变量 | 默认值 | 说明 |
 |---------|--------|------|
 | `OPENCLAW_URL` | `http://127.0.0.1:18789` | OpenClaw 服务地址 |
-| `RELAY_URL` | `wss://claw-wechat.7color.vip/ws-channel` | 中转服务地址 |
+| `RELAY_URL` | `wss://claw.7color.vip/ws-channel` | 中转服务地址 |
 | `INSTANCE_TYPE` | `bare` | 实例类型 |
 
 ---

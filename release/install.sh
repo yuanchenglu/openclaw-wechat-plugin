@@ -17,7 +17,7 @@ set -e
 VERSION="1.2.0"
 PLUGIN_DIR="${PLUGIN_DIR:-$HOME/.openclaw/wechat-channel}"
 OPENCLAW_URL="${OPENCLAW_URL:-http://127.0.0.1:18789}"
-RELAY_URL="${RELAY_URL:-wss://claw-wechat.7color.vip/ws-channel}"
+RELAY_URL="${RELAY_URL:-wss://claw.7color.vip/ws-channel}"
 INSTANCE_TYPE="${INSTANCE_TYPE:-bare}"
 
 RED='\033[0;31m'

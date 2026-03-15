@@ -618,7 +618,7 @@ async def main():
     )
     parser.add_argument(
         "--relay-url",
-        default=os.getenv("RELAY_URL", "wss://claw-wechat.7color.vip/ws-channel"),
+        default=os.getenv("RELAY_URL", "wss://claw.7color.vip/ws-channel"),
         help="中转服务 WebSocket 地址"
     )
     parser.add_argument(

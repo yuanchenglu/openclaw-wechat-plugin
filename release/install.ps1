@@ -11,7 +11,7 @@
 $VERSION = "1.2.0"
 $PLUGIN_DIR = if ($env:PLUGIN_DIR) { $env:PLUGIN_DIR } else { "$env:USERPROFILE\.openclaw\wechat-channel" }
 $OPENCLAW_URL = if ($env:OPENCLAW_URL) { $env:OPENCLAW_URL } else { "http://127.0.0.1:18789" }
-$RELAY_URL = if ($env:RELAY_URL) { $env:RELAY_URL } else { "wss://claw-wechat.7color.vip/ws-channel" }
+$RELAY_URL = if ($env:RELAY_URL) { $env:RELAY_URL } else { "wss://claw.7color.vip/ws-channel" }
 $INSTANCE_TYPE = if ($env:INSTANCE_TYPE) { $env:INSTANCE_TYPE } else { "bare" }
 
 function Print-Banner {
