@@ -73,9 +73,9 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${ECS_USER}@${ECS_HOST}:${ECS_PATH}/
           
-          # 设置权限
+          # 设置权限（排除系统保护文件）
           ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} \
-            "chown -R www:www ${ECS_PATH} && find ${ECS_PATH} -type f -exec chmod 644 {} \; && find ${ECS_PATH} -type d -exec chmod 755 {} \;"
+            "find ${ECS_PATH} -type f ! -name '.user.ini' -exec chown www:www {} \; 2>/dev/null || true; find ${ECS_PATH} -type d -exec chown www:www {} \; 2>/dev/null || true; find ${ECS_PATH} -type f -exec chmod 644 {} \; 2>/dev/null || true; find ${ECS_PATH} -type d -exec chmod 755 {} \; 2>/dev/null || true"
           
           echo "✅ ECS upload complete"
 
