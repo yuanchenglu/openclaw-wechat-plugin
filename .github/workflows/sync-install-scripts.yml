@@ -83,10 +83,10 @@ jobs:
         run: |
           echo "🔍 Verifying deployment..."
           
-          # 验证关键文件
+          # 验证关键文件（plugin 仓库没有 plugin 子目录）
           FILES=(
-            "plugin/src/client.py"
-            "plugin/requirements.txt"
+            "src/client.py"
+            "requirements.txt"
             "release/install.sh"
             "release/install.ps1"
           )
