@@ -83,19 +83,24 @@ jobs:
         run: |
           echo "🔍 Verifying deployment..."
           
-          # 验证关键文件（plugin 仓库没有 plugin 子目录）
-          FILES=(
-            "src/client.py"
-            "requirements.txt"
+          # 核心安装文件（R2 和 ECS 都必须成功）
+          CORE_FILES=(
             "release/install.sh"
             "release/install.ps1"
           )
           
+          # 源码文件（仅 R2 必须成功，ECS 仅警告）
+          SOURCE_FILES=(
+            "src/client.py"
+            "requirements.txt"
+          )
+          
+          echo "### 核心安装文件"
           echo "| File | R2 Status | ECS Status |"
           echo "|------|-----------|------------|"
           
           ALL_OK=true
-          for file in "${FILES[@]}"; do
+          for file in "${CORE_FILES[@]}"; do
             R2_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${R2_PUBLIC_DOMAIN}/${file}")
             ECS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://claw-wechat.7color.vip/${file}")
             echo "| $file | ${R2_STATUS} | ${ECS_STATUS} |"
@@ -105,9 +110,28 @@ jobs:
             fi
           done
           
+          echo ""
+          echo "### 源码文件"
+          echo "| File | R2 Status | ECS Status |"
+          echo "|------|-----------|------------|"
+          
+          for file in "${SOURCE_FILES[@]}"; do
+            R2_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${R2_PUBLIC_DOMAIN}/${file}")
+            ECS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://claw-wechat.7color.vip/${file}")
+            echo "| $file | ${R2_STATUS} | ${ECS_STATUS} |"
+            
+            if [ "$R2_STATUS" != "200" ]; then
+              echo "⚠️ R2 源码文件 $file 不可用"
+              ALL_OK=false
+            fi
+            if [ "$ECS_STATUS" != "200" ]; then
+              echo "⚠️ ECS 源码文件 $file 不可用（不影响安装，用户使用 R2 下载）"
+            fi
+          done
+          
           if [ "$ALL_OK" != "true" ]; then
-            echo "❌ Verification failed!"
+            echo "❌ 核心文件验证失败！"
             exit 1
           fi
           
-          echo "✅ All deployments verified!"
+          echo "✅ 核心部署验证通过！"
