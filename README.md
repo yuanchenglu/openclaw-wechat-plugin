@@ -26,16 +26,20 @@
 2. 执行安装命令（按顺序尝试，成功即停止）：
 
    macOS/Linux:
-   # 方式一（推荐，国内快）
-   curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
+   # 方式一（Cloudflare CDN，全球加速）
+   curl -fsSL https://wechat.clawadmin.org/install.sh | sh
    # 方式二（GitHub 备用）
    curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+   # 方式三（国内备用）
+   curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
    
    Windows PowerShell:
-   # 方式一（推荐，国内快）
-   irm https://claw-wechat.7color.vip/install.ps1 | iex
+   # 方式一（Cloudflare CDN，全球加速）
+   irm https://wechat.clawadmin.org/install.ps1 | iex
    # 方式二（GitHub 备用）
    irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
+   # 方式三（国内备用）
+   irm https://claw-wechat.7color.vip/install.ps1 | iex
 
 3. 安装完成后，启动客户端：
    macOS/Linux: ~/.openclaw/wechat-channel/start.sh
@@ -43,7 +47,7 @@
 
 4. 告诉用户扫码授权链接，完成绑定。
 
-如果遇到问题，请给出具体的错误信息和解决建议。
+如果遇到问题，请自行解决，除非必须要用户操作，用户只要结果。
 ```
 
 等待 OpenClaw 执行安装，然后按提示扫码授权即可。
@@ -56,20 +60,26 @@
 
 **macOS / Linux：**
 ```bash
-# 推荐（国内快）
-curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
+# 推荐（Cloudflare CDN，全球加速）
+curl -fsSL https://wechat.clawadmin.org/install.sh | sh
 
 # 备用（GitHub）
 curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+
+# 备用（国内）
+curl -fsSL https://claw-wechat.7color.vip/install.sh | sh
 ```
 
 **Windows PowerShell：**
 ```powershell
-# 推荐（国内快）
-irm https://claw-wechat.7color.vip/install.ps1 | iex
+# 推荐（Cloudflare CDN，全球加速）
+irm https://wechat.clawadmin.org/install.ps1 | iex
 
 # 备用（GitHub）
 irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
+
+# 备用（国内）
+irm https://claw-wechat.7color.vip/install.ps1 | iex
 ```
 
 ---
