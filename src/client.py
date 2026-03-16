@@ -47,6 +47,30 @@ from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
+# 看门狗和更新模块
+try:
+    from .watchdog import WatchdogMonitor
+    from .updater import Updater
+except ImportError:
+    # 当作为脚本直接运行时
+    from watchdog import WatchdogMonitor
+    from updater import Updater
+
+
+import websockets
+import httpx
+import argparse
+import hashlib
+import logging
+import platform
+import subprocess
+import os
+import sys
+import json
+from pathlib import Path
+from typing import Optional
+from datetime import datetime
+
 def load_version() -> str:
     """从 version.json 读取版本号"""
     # 尝试从多个位置查找 version.json
@@ -397,6 +421,16 @@ class OpenClawWeChatClient:
 
         # 是否是新设备
         self.is_new_device = False
+        
+        # 看门狗监控器（延迟初始化，需要 openid）
+        self.watchdog: Optional[WatchdogMonitor] = None
+        
+        # 自动更新器
+        self.updater: Optional[Updater] = None
+        
+        # 更新信息缓存
+        self._pending_update: Optional[dict] = None
+        self.is_new_device = False
 
     def _init_device_info(self):
         """初始化设备信息
@@ -583,6 +617,21 @@ class OpenClawWeChatClient:
 
                 # 保存配置
                 self._save_local_config()
+                
+                # 初始化看门狗监控（需要 openid）
+                if not self.watchdog or not self.watchdog.is_running:
+                    await self._init_watchdog()
+            else:
+                logger.info("❌ Not authorized. Please scan QR code.")
+            is_authorized = data.get("is_authorized", False)
+            self.openid = data.get("openid")
+            self.authorized = is_authorized
+
+            if is_authorized:
+                logger.info(f"✅ Authorized! OpenID: {self.openid}")
+
+                # 保存配置
+                self._save_local_config()
             else:
                 logger.info("❌ Not authorized. Please scan QR code.")
 
@@ -755,6 +804,160 @@ OpenClaw Gateway 的认证配置不正确，导致请求被拒绝。
                 await asyncio.sleep(delay)
 
     async def run(self):
+        """主循环，支持自动重连和看门狗监控"""
+        
+        # ==================== 初始化更新器 ====================
+        self.updater = Updater(
+            config_dir=self.config.config_dir,
+            current_version=CLIENT_VERSION
+        )
+        
+        # ==================== 检查更新（仅首次启动时） ====================
+        update_info = await self.updater.check_update()
+        if update_info:
+            logger.info(f"\n🔔 发现新版本: {update_info['latest_version']}")
+            logger.info(f"   当前版本: {update_info['current_version']}")
+            logger.info(f"   下载地址: {update_info['download_url']}\n")
+            
+            # 后台下载更新（不阻塞主循环）
+            asyncio.create_task(self._download_update_background(update_info))
+        
+        # ==================== 主循环 ====================
+        # 主循环：连接 -> 接收消息 -> 断开后重连
+        while True:
+            try:
+                # 带重连的连接
+                await self._connect_with_retry()
+                
+                # 初始化看门狗（需要 openid，在授权成功后）
+                if self.authorized and self.openid:
+                    await self._init_watchdog()
+
+                # 接收消息
+                receive_task = asyncio.create_task(self.receive_messages())
+
+                # 心跳循环
+                while self.connected:
+                    await asyncio.sleep(30)
+                    await self.check_status()
+                    
+                    # 心跳成功，重置看门狗计时器
+                    if self.watchdog and self.watchdog.is_running:
+                        self.watchdog.feed()
+
+                # 连接断开，取消接收任务
+                receive_task.cancel()
+                try:
+                    await receive_task
+                except asyncio.CancelledError:
+                    pass
+
+                # 停止看门狗监控
+                if self.watchdog and self.watchdog.is_running:
+                    await self.watchdog.stop()
+
+                logger.warning("🔄 连接已断开，准备重连...")
+                # 循环会自动进入下一次 _connect_with_retry
+
+            except asyncio.CancelledError:
+                # 被外部取消，退出循环
+                logger.info("客户端正在关闭...")
+                
+                # 停止看门狗监控
+                if self.watchdog and self.watchdog.is_running:
+                    await self.watchdog.stop()
+                break
+    
+    async def _init_watchdog(self):
+        """初始化看门狗监控器
+        
+        需要在授权成功后调用，因为需要 openid。
+        """
+        if self.watchdog and self.watchdog.is_running:
+            logger.debug("[Watchdog] 监控已在运行中")
+            return
+        
+        # 创建看门狗监控器
+        self.watchdog = WatchdogMonitor(
+            relay_url=self.relay_url,
+            openid=self.openid,
+            send_callback=self._watchdog_send_callback,
+            timeout_seconds=60,  # 心跳超时阈值
+            check_interval=10   # 检查间隔
+        )
+        
+        # 启动监控
+        await self.watchdog.start()
+        logger.info("[Watchdog] 监控已启动")
+    
+    def _watchdog_send_callback(self, message: dict):
+        """看门狗告警发送回调
+        
+        将告警消息发送到中转服务，由中转服务转发给用户微信。
+        
+        Args:
+            message: 告警消息字典
+        """
+        # 使用 asyncio.create_task 在后台发送，避免阻塞
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(self._send_watchdog_alert(message))
+            else:
+                loop.run_until_complete(self._send_watchdog_alert(message))
+        except Exception as e:
+            logger.error(f"[Watchdog] 发送告警回调失败: {e}")
+    
+    async def _send_watchdog_alert(self, message: dict):
+        """发送看门狗告警到中转服务
+        
+        Args:
+            message: 告警消息字典
+        """
+        try:
+            if self.websocket and self.connected:
+                await self.websocket.send(json.dumps(message))
+                logger.info(f"[Watchdog] 告警已发送到中转服务")
+            else:
+                logger.warning("[Watchdog] 连接已断开，无法发送告警")
+        except Exception as e:
+            logger.error(f"[Watchdog] 发送告警失败: {e}")
+    
+    async def _download_update_background(self, update_info: dict):
+        """后台下载更新
+        
+        不阻塞主循环，下载完成后等待合适时机重启。
+        
+        Args:
+            update_info: 更新信息字典
+        """
+        try:
+            logger.info("[Updater] 开始后台下载更新...")
+            
+            # 下载更新包
+            filepath = await self.updater.download_update()
+            if not filepath:
+                logger.error("[Updater] 下载更新失败")
+                return
+            
+            logger.info(f"[Updater] 更新已下载: {filepath}")
+            
+            # 安装更新
+            success = await self.updater.install_update(filepath)
+            if success:
+                logger.info("[Updater] 更新已安装，将在下次空闲时重启")
+                self._pending_update = update_info
+                
+                # 通知用户有更新待重启
+                logger.info("\n" + "="*60)
+                logger.info("✨ 新版本已安装，重启客户端生效")
+                logger.info(f"   {update_info['current_version']} → {update_info['latest_version']}")
+                logger.info(f"   重启命令: {self.updater.get_restart_command()}")
+                logger.info("="*60 + "\n")
+            else:
+                logger.error("[Updater] 安装更新失败")
+        except Exception as e:
+            logger.error(f"[Updater] 后台更新失败: {e}")
         """主循环，支持自动重连"""
         # 检查更新（仅首次启动时）
         update_info = await check_update()
