@@ -14,7 +14,7 @@
 
 set -e
 
-VERSION="1.2.0"
+VERSION="1.4.0"
 PLUGIN_DIR="${PLUGIN_DIR:-$HOME/.openclaw/wechat-channel}"
 OPENCLAW_URL="${OPENCLAW_URL:-http://127.0.0.1:18789}"
 RELAY_URL="${RELAY_URL:-wss://claw.7color.vip/ws-channel}"
@@ -169,5 +169,16 @@ main() {
     create_launcher
     print_completion
 }
+
+# 可选：安装系统服务
+if [ "$1" = "--install-service" ]; then
+    echo ""
+    print_step "服务" "安装系统服务..."
+    if [ -f "$PLUGIN_DIR/scripts/install-service.sh" ]; then
+        bash "$PLUGIN_DIR/scripts/install-service.sh"
+    else
+        print_error "服务安装脚本不存在"
+    fi
+fi
 
 main "$@"

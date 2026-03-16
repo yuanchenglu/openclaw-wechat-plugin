@@ -8,7 +8,7 @@
 # 支持系统：Windows 10/11
 # ============================================================================
 
-$VERSION = "1.2.0"
+$VERSION = "1.4.0"
 $PLUGIN_DIR = if ($env:PLUGIN_DIR) { $env:PLUGIN_DIR } else { "$env:USERPROFILE\.openclaw\wechat-channel" }
 $OPENCLAW_URL = if ($env:OPENCLAW_URL) { $env:OPENCLAW_URL } else { "http://127.0.0.1:18789" }
 $RELAY_URL = if ($env:RELAY_URL) { $env:RELAY_URL } else { "wss://claw.7color.vip/ws-channel" }
@@ -176,3 +176,15 @@ Download-Client
 Install-Dependencies -PythonCmd $pythonCmd
 Create-Launcher -PythonCmd $pythonCmd
 Print-Completion
+
+# 可选：安装系统服务
+if ($args -contains "--install-service") {
+    Write-Host ""
+    Write-Host "[服务] 安装系统服务..." -ForegroundColor Blue
+    $serviceScript = "$PLUGIN_DIR\scripts\install-service.ps1"
+    if (Test-Path $serviceScript) {
+        & $serviceScript
+    } else {
+        Write-Host "⚠️ 服务安装脚本不存在，请手动配置 Windows 任务计划" -ForegroundColor Yellow
+    }
+}
