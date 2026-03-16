@@ -48,18 +48,46 @@ from typing import Optional
 from datetime import datetime
 
 # 版本信息
-CLIENT_VERSION = "1.2.0"
+CLIENT_VERSION = "1.3.0"
 MIN_SERVER_VERSION = "1.0.0"
 UPDATE_CHECK_URL = "https://claw.7color.vip/channel-update/version.json"
 
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+# 日志配置
+LOG_DIR = Path.home() / ".openclaw" / "wechat-channel" / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / f"client_{datetime.now().strftime('%Y%m%d')}.log"
 
+# 配置日志（同时输出到终端和文件）
+def setup_logging():
+    """配置日志系统"""
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    
+    # 格式
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    
+    # 终端输出
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    
+    # 文件输出
+    try:
+        file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+        logger.info(f"日志文件: {LOG_FILE}")
+    except Exception as e:
+        logger.warning(f"无法创建日志文件: {e}")
+    
+    return logger
+
+logger = setup_logging()
 
 def compare_versions(v1: str, v2: str) -> int:
     """比较版本号，返回 -1, 0, 1"""
@@ -552,6 +580,8 @@ class OpenClawWeChatClient:
 
     async def call_openclaw(self, message: str, msg_type: str = "text") -> Optional[str]:
         """调用 OpenClaw API"""
+        logger.info(f"[API] 调用 OpenClaw: url={self.openclaw_url}/v1/chat/completions")
+        
         try:
             headers = {"Content-Type": "application/json"}
             if self.api_key:
@@ -569,32 +599,42 @@ class OpenClawWeChatClient:
 
             async with httpx.AsyncClient(timeout=120) as client:
                 response = await client.post(url, json=payload, headers=headers)
+                
+                logger.info(f"[API] 响应状态码: {response.status_code}")
 
                 if response.status_code == 200:
                     data = response.json()
                     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    logger.info(f"[API] 成功: 响应长度={len(content)} 字符")
                     return content
                 
                 elif response.status_code == 404:
-                    # Chat Completions API 未启用，返回自愈指引
-                    logger.error(f"OpenClaw Chat Completions API disabled (404)")
+                    # Chat Completions API 未启用
+                    logger.error(f"[API] 404 错误: Chat Completions API 未启用")
+                    logger.error(f"[API] 解决方法: 在 gateway.http.endpoints.chatCompletions.enabled 设置为 true")
                     return self._build_self_healing_message("chat_api_disabled")
                 
                 elif response.status_code == 401:
                     # 认证错误
-                    logger.error(f"OpenClaw authentication failed (401)")
+                    logger.error(f"[API] 401 错误: 认证失败")
+                    logger.error(f"[API] 响应内容: {response.text[:200]}")
                     return self._build_self_healing_message("auth_failed")
                 
                 else:
-                    logger.error(f"OpenClaw API error: {response.status_code}")
+                    logger.error(f"[API] 错误 {response.status_code}: {response.text[:200]}")
                     return f"⚠️ OpenClaw 服务异常 ({response.status_code})\n\n请稍后重试，或发送 /status 查看状态。"
 
         except httpx.ConnectError:
-            logger.error(f"Cannot connect to OpenClaw at {self.openclaw_url}")
+            logger.error(f"[API] 连接失败: 无法连接到 {self.openclaw_url}")
+            logger.error(f"[API] 请检查: 1) OpenClaw 是否运行 2) 端口是否正确 3) 防火墙设置")
             return self._build_self_healing_message("connection_failed")
         
+        except httpx.TimeoutException:
+            logger.error(f"[API] 请求超时 (120秒)")
+            return "⚠️ OpenClaw 响应超时\n\n请稍后重试。"
+        
         except Exception as e:
-            logger.error(f"Failed to call OpenClaw: {e}")
+            logger.error(f"[API] 未知错误: {type(e).__name__}: {e}")
             return f"⚠️ 连接异常\n\n错误信息: {str(e)}\n\n请发送 /status 查看状态。"
 
     def _build_self_healing_message(self, error_type: str) -> str:
