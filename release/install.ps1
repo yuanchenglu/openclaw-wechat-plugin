@@ -65,6 +65,7 @@ function Download-Client {
     
     # 下载源列表（按优先级排序）
     $sources = @(
+        "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main",
         "https://wechat.clawadmin.org",
         "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main",
         "https://claw-wechat.7color.vip"
@@ -78,8 +79,8 @@ function Download-Client {
     # 尝试从多个源下载
     $downloaded = $false
     foreach ($baseUrl in $sources) {
-        $clientUrl = "$baseUrl/plugin/src/client.py"
-        $requirementsUrl = "$baseUrl/plugin/requirements.txt"
+        $clientUrl = "$baseUrl/src/client.py"
+        $requirementsUrl = "$baseUrl/requirements.txt"
         
         try {
             Invoke-WebRequest -Uri $clientUrl -OutFile "$PLUGIN_DIR\client.py" -UseBasicParsing -TimeoutSec 30
@@ -95,6 +96,9 @@ function Download-Client {
     
     if (-not $downloaded) {
         Write-Host "❌ 所有下载源均失败，请检查网络连接" -ForegroundColor Red
+        Write-Host "建议：" -ForegroundColor Yellow
+        Write-Host "  1. 检查网络是否正常" -ForegroundColor Yellow
+        Write-Host "  2. 尝试手动下载: https://gitee.com/yuanchenglu/openclaw-wechat-plugin" -ForegroundColor Yellow
         exit 1
     }
 }
@@ -106,7 +110,7 @@ function Install-Dependencies {
     
     Push-Location $PLUGIN_DIR
     try {
-        & $PythonCmd -m pip install -q websockets httpx 2>$null
+        & $PythonCmd -m pip install -q -i https://pypi.tuna.tsinghua.edu.cn/simple websockets httpx 2>$null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "✅ 依赖已安装" -ForegroundColor Green
         } else {

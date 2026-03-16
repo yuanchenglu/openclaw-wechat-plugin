@@ -27,19 +27,23 @@
 2. 执行安装命令（按顺序尝试，成功即停止）：
 
    macOS/Linux:
-   # 方式一（Cloudflare CDN，全球加速）
+   # 方式一（Gitee，国内推荐）
+   curl -fsSL https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.sh | sh
+   # 方式二（Cloudflare CDN，全球加速）
    curl -fsSL https://wechat.clawadmin.org/release/install.sh | sh
-   # 方式二（GitHub 备用）
+   # 方式三（GitHub 备用）
    curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
-   # 方式三（国内备用）
+   # 方式四（国内备用）
    curl -fsSL https://claw-wechat.7color.vip/release/install.sh | sh
     
    Windows PowerShell:
-   # 方式一（Cloudflare CDN，全球加速）
+   # 方式一（Gitee，国内推荐）
+   irm https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.ps1 | iex
+   # 方式二（Cloudflare CDN，全球加速）
    irm https://wechat.clawadmin.org/release/install.ps1 | iex
-   # 方式二（GitHub 备用）
+   # 方式三（GitHub 备用）
    irm https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.ps1 | iex
-   # 方式三（国内备用）
+   # 方式四（国内备用）
    irm https://claw-wechat.7color.vip/release/install.ps1 | iex
 
 3. 安装完成后，启动客户端：
@@ -64,7 +68,10 @@
 
 **macOS / Linux：**
 ```bash
-# 推荐（Cloudflare CDN，全球加速）
+# 推荐（Gitee，国内用户首选）
+curl -fsSL https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.sh | sh
+
+# 备用（Cloudflare CDN，全球加速）
 curl -fsSL https://wechat.clawadmin.org/release/install.sh | sh
 
 # 备用（GitHub）
@@ -76,7 +83,10 @@ curl -fsSL https://claw-wechat.7color.vip/release/install.sh | sh
 
 **Windows PowerShell：**
 ```powershell
-# 推荐（Cloudflare CDN，全球加速）
+# 推荐（Gitee，国内用户首选）
+irm https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.ps1 | iex
+
+# 备用（Cloudflare CDN，全球加速）
 irm https://wechat.clawadmin.org/release/install.ps1 | iex
 
 # 备用（GitHub）

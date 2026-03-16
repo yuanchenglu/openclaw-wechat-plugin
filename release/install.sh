@@ -84,6 +84,7 @@ download_client() {
     
     # 下载源列表（按优先级排序）
     local sources=(
+        "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main"
         "https://wechat.clawadmin.org"
         "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main"
         "https://claw-wechat.7color.vip"
@@ -93,14 +94,19 @@ download_client() {
     
     # 尝试从多个源下载
     for base_url in "${sources[@]}"; do
-        if curl -fsSL "$base_url/plugin/src/client.py" -o "$PLUGIN_DIR/client.py" 2>/dev/null && \
-           curl -fsSL "$base_url/plugin/requirements.txt" -o "$PLUGIN_DIR/requirements.txt" 2>/dev/null; then
+        if curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
+               "$base_url/src/client.py" -o "$PLUGIN_DIR/client.py" 2>/dev/null && \
+           curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
+               "$base_url/requirements.txt" -o "$PLUGIN_DIR/requirements.txt" 2>/dev/null; then
             print_success "客户端已下载到: $PLUGIN_DIR (来源: $base_url)"
             return 0
         fi
     done
     
     print_error "所有下载源均失败，请检查网络连接"
+    print_error "建议："
+    print_error "  1. 检查网络是否正常"
+    print_error "  2. 尝试手动下载: https://gitee.com/yuanchenglu/openclaw-wechat-plugin"
     exit 1
 }
 
@@ -108,7 +114,7 @@ install_dependencies() {
     print_step "4/4" "安装依赖..."
     
     cd "$PLUGIN_DIR"
-    $PIP_CMD install -q websockets httpx 2>/dev/null || {
+    $PIP_CMD install -q -i https://pypi.tuna.tsinghua.edu.cn/simple websockets httpx 2>/dev/null || {
         print_error "依赖安装失败"
         exit 1
     }
