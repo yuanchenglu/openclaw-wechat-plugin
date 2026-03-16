@@ -574,13 +574,90 @@ class OpenClawWeChatClient:
                     data = response.json()
                     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                     return content
+                
+                elif response.status_code == 404:
+                    # Chat Completions API 未启用，返回自愈指引
+                    logger.error(f"OpenClaw Chat Completions API disabled (404)")
+                    return self._build_self_healing_message("chat_api_disabled")
+                
+                elif response.status_code == 401:
+                    # 认证错误
+                    logger.error(f"OpenClaw authentication failed (401)")
+                    return self._build_self_healing_message("auth_failed")
+                
                 else:
                     logger.error(f"OpenClaw API error: {response.status_code}")
-                    return f"Error: OpenClaw returned {response.status_code}"
+                    return f"⚠️ OpenClaw 服务异常 ({response.status_code})\n\n请稍后重试，或发送 /status 查看状态。"
 
+        except httpx.ConnectError:
+            logger.error(f"Cannot connect to OpenClaw at {self.openclaw_url}")
+            return self._build_self_healing_message("connection_failed")
+        
         except Exception as e:
             logger.error(f"Failed to call OpenClaw: {e}")
-            return f"Error: {str(e)}"
+            return f"⚠️ 连接异常\n\n错误信息: {str(e)}\n\n请发送 /status 查看状态。"
+
+    def _build_self_healing_message(self, error_type: str) -> str:
+        """构建自愈指引消息
+        
+        返回包含三部分的消息：
+        1. 问题描述（通俗语言）
+        2. 解决方法（用户复制粘贴给 OpenClaw 即可触发自愈）
+        3. 原因分析（供 AI 理解，非用户阅读）
+        """
+        if error_type == "chat_api_disabled":
+            return """⚠️ 需要启用 API 接口
+
+【问题描述】
+OpenClaw 的微信对话接口未启用，导致消息无法正常处理。
+
+【解决方法】
+请复制以下内容，发送给 OpenClaw 对话框（打开浏览器访问 http://127.0.0.1:18789/）：
+
+```
+请帮我启用 Gateway 的 Chat Completions API：
+在 gateway 配置中添加：
+"http": {"endpoints": {"chatCompletions": {"enabled": true}}}
+```
+
+发送后，OpenClaw 会自动完成配置更新，微信对话即可恢复正常。
+
+【原因分析】
+技术细节：Gateway 的 /v1/chat/completions 端点默认禁用。OpenClaw 升级或配置重置后可能恢复默认设置。启用该端点后，微信频道插件才能正常调用 AI 对话能力。"""
+        
+        elif error_type == "auth_failed":
+            return """⚠️ 认证配置需要更新
+
+【问题描述】
+OpenClaw Gateway 的认证配置不正确，导致请求被拒绝。
+
+【解决方法】
+请复制以下内容，发送给 OpenClaw 对话框：
+
+```
+请检查 gateway.auth 配置，确保 token 配置正确，或暂时将 auth.mode 设置为 "none" 进行测试。
+```
+
+【原因分析】
+技术细节：Gateway auth token 不匹配或过期。需要检查 gateway.auth.token 配置。"""
+        
+        elif error_type == "connection_failed":
+            return f"""⚠️ 无法连接到 OpenClaw
+
+【问题描述】
+无法连接到 OpenClaw 服务（{self.openclaw_url}），请确认 OpenClaw 是否正在运行。
+
+【解决方法】
+1. 确保 OpenClaw 已启动（终端运行 `openclaw gateway` 或打开 OpenClaw 应用）
+2. 检查端口 {self.openclaw_url.split(':')[-1] if ':' in self.openclaw_url else '18789'} 是否正确
+
+【原因分析】
+技术细节：HTTP 连接失败，可能是 OpenClaw 未启动、端口不匹配或防火墙阻止。"""
+        
+        else:
+            return """⚠️ 未知错误
+
+请发送 /status 查看连接状态，或联系技术支持。"""
 
     async def check_status(self):
         """检查连接状态"""
