@@ -47,8 +47,31 @@ from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
+def load_version() -> str:
+    """从 version.json 读取版本号"""
+    # 尝试从多个位置查找 version.json
+    possible_paths = [
+        # 1. 安装目录的 release 目录 (开发和生产环境)
+        Path(__file__).parent.parent / "release" / "version.json",
+        # 2. 安装目录根目录 (打包后)
+        Path(__file__).parent.parent / "version.json",
+        # 3. 用户配置目录
+        Path.home() / ".openclaw" / "wechat-channel" / "version.json",
+    ]
+    
+    for path in possible_paths:
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return data.get("version", "0.0.0")
+            except Exception:
+                pass
+    
+    return "0.0.0"  # 默认版本
+
 # 版本信息
-CLIENT_VERSION = "1.3.0"
+CLIENT_VERSION = load_version()
 MIN_SERVER_VERSION = "1.0.0"
 UPDATE_CHECK_URL = "https://claw.7color.vip/channel-update/version.json"
 
@@ -322,7 +345,7 @@ async def check_update() -> Optional[dict]:
             resp = await client.get(UPDATE_CHECK_URL)
             if resp.status_code == 200:
                 data = resp.json()
-                latest = data.get("client_version", "0.0.0")
+                latest = data.get("version", "0.0.0")
                 if compare_versions(latest, CLIENT_VERSION) > 0:
                     return {
                         "has_update": True,
@@ -400,6 +423,8 @@ class OpenClawWeChatClient:
             self.device_id = generate_device_id()
             self.is_new_device = True
             logger.info(f"🆕 新设备: {self.device_id}")
+            # 新设备生成 device_id 后立即保存，防止重启后丢失
+            self._save_local_config()
 
     async def connect(self):
         """连接到中转服务"""
