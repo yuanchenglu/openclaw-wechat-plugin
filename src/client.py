@@ -74,6 +74,9 @@ def load_version() -> str:
 CLIENT_VERSION = load_version()
 MIN_SERVER_VERSION = "1.0.0"
 UPDATE_CHECK_URL = "https://claw.7color.vip/channel-update/version.json"
+# 重连参数
+INITIAL_RETRY_DELAY = 1  # 初始重连延迟（秒）
+MAX_RETRY_DELAY = 30     # 最大重连延迟（秒）
 
 # 日志配置
 LOG_DIR = Path.home() / ".openclaw" / "wechat-channel" / "logs"
@@ -728,27 +731,65 @@ OpenClaw Gateway 的认证配置不正确，导致请求被拒绝。
         """检查连接状态"""
         await self.send_message({"type": "status"})
 
+    async def _connect_with_retry(self) -> bool:
+        """带指数退避的重连逻辑
+        
+        Returns:
+            bool: 连接成功返回 True
+        """
+        retry_count = 0
+        
+        while True:
+            try:
+                await self.connect()
+                retry_count = 0  # 连接成功，重置计数器
+                return True
+            except Exception as e:
+                retry_count += 1
+                # 计算指数退避延迟
+                delay = min(2 ** (retry_count - 1), MAX_RETRY_DELAY)
+                
+                logger.warning(f"🔄 连接失败 (第 {retry_count} 次重试): {e}")
+                logger.info(f"⏳ {delay} 秒后重连...")
+                
+                await asyncio.sleep(delay)
+
     async def run(self):
-        """主循环"""
-        # 检查更新
+        """主循环，支持自动重连"""
+        # 检查更新（仅首次启动时）
         update_info = await check_update()
         if update_info:
             logger.info(f"\n🔔 New version available: {update_info['latest_version']}")
             logger.info(f"Download: {update_info['download_url']}\n")
 
-        await self.connect()
+        # 主循环：连接 -> 接收消息 -> 断开后重连
+        while True:
+            try:
+                # 带重连的连接
+                await self._connect_with_retry()
 
-        receive_task = asyncio.create_task(self.receive_messages())
+                # 接收消息
+                receive_task = asyncio.create_task(self.receive_messages())
 
-        while self.connected:
-            await asyncio.sleep(30)
-            await self.check_status()
+                # 心跳循环
+                while self.connected:
+                    await asyncio.sleep(30)
+                    await self.check_status()
 
-        receive_task.cancel()
-        try:
-            await receive_task
-        except asyncio.CancelledError:
-            pass
+                # 连接断开，取消接收任务
+                receive_task.cancel()
+                try:
+                    await receive_task
+                except asyncio.CancelledError:
+                    pass
+
+                logger.warning("🔄 连接已断开，准备重连...")
+                # 循环会自动进入下一次 _connect_with_retry
+
+            except asyncio.CancelledError:
+                # 被外部取消，退出循环
+                logger.info("客户端正在关闭...")
+                break
 
 
 async def main():
