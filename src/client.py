@@ -57,20 +57,6 @@ except ImportError:
     from updater import Updater
 
 
-import websockets
-import httpx
-import argparse
-import hashlib
-import logging
-import platform
-import subprocess
-import os
-import sys
-import json
-from pathlib import Path
-from typing import Optional
-from datetime import datetime
-
 def load_version() -> str:
     """从 version.json 读取版本号"""
     # 尝试从多个位置查找 version.json
