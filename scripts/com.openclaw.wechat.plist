@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+============================================================================
+OpenClaw WeChat Channel Client - launchd Service
+============================================================================
+
+安装服务：
+   cp com.openclaw.wechat.plist ~/Library/LaunchAgents/
+   launchctl load ~/Library/LaunchAgents/com.openclaw.wechat.plist
+
+查看状态：
+   launchctl list | grep openclaw
+
+查看日志：
+   tail -f ~/.openclaw/wechat-channel/openclaw-wechat.log
+
+卸载服务：
+   launchctl unload ~/Library/LaunchAgents/com.openclaw.wechat.plist
+   rm ~/Library/LaunchAgents/com.openclaw.wechat.plist
+
+注意：此文件需要将 {{HOME}} 替换为实际的用户主目录路径。
+      请使用 install-service.sh 脚本自动安装。
+
+============================================================================
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.openclaw.wechat</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{HOME}}/.openclaw/wechat-channel/start.sh</string>
+    </array>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+    
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    
+    <key>StandardOutPath</key>
+    <string>{{HOME}}/.openclaw/wechat-channel/openclaw-wechat.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>{{HOME}}/.openclaw/wechat-channel/openclaw-wechat.log</string>
+    
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OPENCLAW_URL</key>
+        <string>http://127.0.0.1:18789</string>
+        <key>RELAY_URL</key>
+        <string>wss://claw.7color.vip/ws-channel</string>
+        <key>INSTANCE_TYPE</key>
+        <string>bare</string>
+    </dict>
+</dict>
+</plist>

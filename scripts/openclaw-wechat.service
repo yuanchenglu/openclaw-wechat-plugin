@@ -1,0 +1,49 @@
+# ============================================================================
+# OpenClaw WeChat Channel Client - systemd Service Unit
+# ============================================================================
+#
+# 安装服务：
+#   mkdir -p ~/.config/systemd/user
+#   cp openclaw-wechat.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable openclaw-wechat
+#   systemctl --user start openclaw-wechat
+#
+# 查看状态：
+#   systemctl --user status openclaw-wechat
+#
+# 查看日志：
+#   journalctl --user -u openclaw-wechat -f
+#
+# 卸载服务：
+#   systemctl --user stop openclaw-wechat
+#   systemctl --user disable openclaw-wechat
+#   rm ~/.config/systemd/user/openclaw-wechat.service
+#   systemctl --user daemon-reload
+#
+# ============================================================================
+
+[Unit]
+Description=OpenClaw WeChat Channel Client
+Documentation=https://wechat.clawadmin.org
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.openclaw/wechat-channel/start.sh
+ExecStop=%h/.openclaw/wechat-channel/stop.sh
+Restart=on-failure
+RestartSec=10
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+
+# 环境变量（可选，取消注释以使用）
+# Environment="OPENCLAW_URL=http://127.0.0.1:18789"
+# Environment="RELAY_URL=wss://claw.7color.vip/ws-channel"
+# Environment="INSTANCE_TYPE=bare"
+
+[Install]
+WantedBy=default.target
