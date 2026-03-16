@@ -132,9 +132,9 @@ def is_cloud_vm() -> bool:
                 if any(vendor in name for vendor in cloud_vendors):
                     return True
         
-        # 方法 2：检查 systemd 环境变量
-        if os.path.exists("/etc/cloud/cloud.cfg"):
-            return True
+        # 方法 2：移除 cloud.cfg 检查（物理机也可能安装 cloud-init）
+        # 不再单独依赖 cloud.cfg，而是依赖方法 1 和方法 3
+        
         
         # 方法 3：检查特定云厂商的特征文件
         cloud_indicator_files = [
