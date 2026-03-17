@@ -1530,6 +1530,65 @@ class TestUpdaterCoverage:
             result = await check_for_updates("1.0.0")
             assert result is not None
             assert result["has_update"] is True
+    
+    def test_get_restart_command_darwin(self, temp_config_dir):
+        """测试 macOS 重启命令"""
+        
+        updater = Updater(
+            config_dir=temp_config_dir,
+            current_version="1.0.0"
+        )
+        
+        with patch("platform.system", return_value="Darwin"):
+            cmd = updater.get_restart_command()
+            assert cmd is not None
+            assert isinstance(cmd, str)
+    
+    def test_get_restart_command_linux(self, temp_config_dir):
+        """测试 Linux 重启命令"""
+        
+        updater = Updater(
+            config_dir=temp_config_dir,
+            current_version="1.0.0"
+        )
+        
+        with patch("platform.system", return_value="Linux"):
+            cmd = updater.get_restart_command()
+            assert cmd is not None
+            assert isinstance(cmd, str)
+    
+    def test_get_restart_command_windows(self, temp_config_dir):
+        """测试 Windows 重启命令"""
+        
+        updater = Updater(
+            config_dir=temp_config_dir,
+            current_version="1.0.0"
+        )
+        
+        with patch("platform.system", return_value="Windows"):
+            cmd = updater.get_restart_command()
+            assert cmd is not None
+            assert isinstance(cmd, str)
+    
+    def test_cleanup_extracted_dir(self, temp_config_dir):
+        """测试清理解压目录"""
+        
+        updater = Updater(
+            config_dir=temp_config_dir,
+            update_dir=temp_config_dir / "updates",
+            current_version="1.0.0"
+        )
+        
+        # 创建解压目录（使用 updater 的 update_dir）
+        extracted_dir = updater.update_dir / "extracted"
+        extracted_dir.mkdir(parents=True, exist_ok=True)
+        (extracted_dir / "test.txt").write_text("test")
+        
+        # 调用 cleanup
+        updater.cleanup()
+        
+        # 解压目录应该被清理
+        assert not extracted_dir.exists()
 
 # ============ 运行测试 ============
 
