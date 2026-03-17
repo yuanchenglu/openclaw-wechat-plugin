@@ -119,12 +119,13 @@ class Updater:
         except (ValueError, AttributeError):
             return 0
     
-    async def check_update(self, force: bool = False) -> Optional[dict]:
+    async def check_update(self, force: bool = False, silent: bool = False) -> Optional[dict]:
         """
         检查是否有更新
         
         Args:
             force: 强制重新检查，忽略缓存
+            silent: 静默模式，不打印通知日志
             
         Returns:
             如果有更新，返回更新信息字典；否则返回 None
@@ -135,7 +136,8 @@ class Updater:
         # 依次尝试各个下载源
         for source in DOWNLOAD_SOURCES:
             try:
-                logger.info(f"正在从 {source['name']} 检查更新...")
+                if not silent:
+                    logger.info(f"正在从 {source['name']} 检查更新...")
                 async with httpx.AsyncClient(timeout=10) as client:
                     resp = await client.get(source["version_url"])
                     if resp.status_code == 200:
@@ -161,30 +163,35 @@ class Updater:
                             }
                             return self._update_info
                         else:
-                            logger.info(f"已是最新版本: {self.current_version}")
+                            if not silent:
+                                logger.info(f"已是最新版本: {self.current_version}")
                             return None
             except Exception as e:
                 logger.debug(f"从 {source['name']} 检查更新失败: {e}")
                 continue
         
-        logger.warning("所有更新源均无法访问")
+        if not silent:
+            logger.warning("所有更新源均无法访问")
         return None
     
     async def download_update(
         self,
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        silent: bool = False
     ) -> Optional[Path]:
         """
         下载更新包
         
         Args:
             progress_callback: 进度回调函数，参数为 (downloaded_bytes, total_bytes)
+            silent: 静默模式，不打印下载进度日志
             
         Returns:
             下载成功返回文件路径，失败返回 None
         """
         if not self._update_info:
-            logger.error("请先调用 check_update() 检查更新")
+            if not silent:
+                logger.error("请先调用 check_update() 检查更新")
             return None
         
         # 构建下载 URL 列表
@@ -202,7 +209,8 @@ class Updater:
         
         for url in urls:
             try:
-                logger.info(f"正在下载: {url}")
+                if not silent:
+                    logger.info(f"正在下载: {url}")
                 
                 async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
                     # 先获取文件大小
@@ -234,7 +242,8 @@ class Updater:
                                 filepath.unlink()
                                 continue
                         
-                        logger.info(f"下载完成: {filepath}")
+                        if not silent:
+                            logger.info(f"下载完成: {filepath}")
                         self._downloaded_file = filepath
                         return filepath
                         
@@ -242,7 +251,8 @@ class Updater:
                 logger.debug(f"下载失败 ({url}): {e}")
                 continue
         
-        logger.error("所有下载源均失败")
+        if not silent:
+            logger.error("所有下载源均失败")
         return None
     
     def _verify_checksum(self, filepath: Path, expected_sha256: str) -> bool:
@@ -309,19 +319,21 @@ class Updater:
                 shutil.copy2(src, dst)
                 logger.debug(f"已恢复: {filename}")
     
-    async def install_update(self, archive_path: Optional[Path] = None) -> bool:
+    async def install_update(self, archive_path: Optional[Path] = None, silent: bool = False) -> bool:
         """
         安装更新
         
         Args:
             archive_path: 更新包路径，如果为 None 则使用已下载的文件
+            silent: 静默模式，不打印安装进度日志
             
         Returns:
             安装成功返回 True，失败返回 False
         """
         filepath = archive_path or self._downloaded_file
         if not filepath or not filepath.exists():
-            logger.error("更新包不存在，请先下载")
+            if not silent:
+                logger.error("更新包不存在，请先下载")
             return False
         
         # 创建备份目录
@@ -332,11 +344,13 @@ class Updater:
         
         try:
             # 1. 备份配置文件
-            logger.info("正在备份配置文件...")
+            if not silent:
+                logger.info("正在备份配置文件...")
             backed_up = self._backup_protected_files(backup_dir)
             
             # 2. 解压更新包到临时目录
-            logger.info("正在解压更新包...")
+            if not silent:
+                logger.info("正在解压更新包...")
             extract_dir = self.update_dir / "extracted"
             if extract_dir.exists():
                 shutil.rmtree(extract_dir)
@@ -353,7 +367,8 @@ class Updater:
                 source_dir = extract_dir
             
             # 4. 复制文件到配置目录（跳过受保护的文件）
-            logger.info("正在安装更新...")
+            if not silent:
+                logger.info("正在安装更新...")
             for item in source_dir.iterdir():
                 if item.name in PROTECTED_FILES:
                     logger.debug(f"跳过受保护文件: {item.name}")
@@ -372,7 +387,8 @@ class Updater:
                     shutil.copy2(item, dst)
             
             # 5. 恢复配置文件
-            logger.info("正在恢复配置文件...")
+            if not silent:
+                logger.info("正在恢复配置文件...")
             self._restore_protected_files(backup_dir, backed_up)
             
             # 6. 更新启动脚本
@@ -381,7 +397,8 @@ class Updater:
             # 7. 清理临时文件
             shutil.rmtree(extract_dir)
             
-            logger.info("更新安装完成！")
+            if not silent:
+                logger.info("更新安装完成！")
             return True
             
         except Exception as e:

@@ -51,10 +51,20 @@ from datetime import datetime
 try:
     from .watchdog import WatchdogMonitor
     from .updater import Updater
+    from .types import CHECK_INTERVAL, RESTART_DELAY, RESTART_HOUR
+    from .update_state import UpdateState, save_state, load_state, clear_state
 except ImportError:
     # 当作为脚本直接运行时
     from watchdog import WatchdogMonitor
     from updater import Updater
+    # 避免与内置 types 模块冲突
+    import sys
+    from pathlib import Path
+    _src_path = Path(__file__).parent
+    if str(_src_path) not in sys.path:
+        sys.path.insert(0, str(_src_path))
+    from types import CHECK_INTERVAL, RESTART_DELAY, RESTART_HOUR
+    from update_state import UpdateState, save_state, load_state, clear_state
 
 
 def load_version() -> str:
@@ -416,7 +426,13 @@ class OpenClawWeChatClient:
         
         # 更新信息缓存
         self._pending_update: Optional[dict] = None
+        
+        # 静默升级相关
+        self._update_check_task: Optional[asyncio.Task] = None
+        self._restart_timer: Optional[asyncio.TimerHandle] = None
+        self._upgrade_state: Optional[UpdateState] = None
         self.is_new_device = False
+        
 
     def _init_device_info(self):
         """初始化设备信息
@@ -790,7 +806,7 @@ OpenClaw Gateway 的认证配置不正确，导致请求被拒绝。
                 await asyncio.sleep(delay)
 
     async def run(self):
-        """主循环，支持自动重连和看门狗监控"""
+        """主循环，支持自动重连、看门狗监控和静默升级"""
         
         # ==================== 初始化更新器 ====================
         self.updater = Updater(
@@ -798,15 +814,25 @@ OpenClaw Gateway 的认证配置不正确，导致请求被拒绝。
             current_version=CLIENT_VERSION
         )
         
-        # ==================== 检查更新（仅首次启动时） ====================
-        update_info = await self.updater.check_update()
+        # ==================== 检查是否需要重启（T7）====================
+        self._upgrade_state = load_state()
+        if self._upgrade_state and self._upgrade_state.is_restart_due():
+            logger.info("🔄 检测到待重启的更新，正在执行重启...")
+            await self._execute_restart()
+            return  # 重启后不会执行到这里
+        
+        # ==================== 启动时检查更新（首次启动，非静默）====================
+        update_info = await self.updater.check_update(silent=False)
         if update_info:
             logger.info(f"\n🔔 发现新版本: {update_info['latest_version']}")
             logger.info(f"   当前版本: {update_info['current_version']}")
             logger.info(f"   下载地址: {update_info['download_url']}\n")
             
             # 后台下载更新（不阻塞主循环）
-            asyncio.create_task(self._download_update_background(update_info))
+            asyncio.create_task(self._download_update_background(update_info, silent=False))
+        
+        # ==================== 启动定时检查任务（T5）====================
+        self._update_check_task = asyncio.create_task(self._periodic_update_check())
         
         # ==================== 主循环 ====================
         # 主循环：连接 -> 接收消息 -> 断开后重连
@@ -849,10 +875,97 @@ OpenClaw Gateway 的认证配置不正确，导致请求被拒绝。
                 # 被外部取消，退出循环
                 logger.info("客户端正在关闭...")
                 
+                # 停止定时检查任务
+                if self._update_check_task:
+                    self._update_check_task.cancel()
+                    try:
+                        await self._update_check_task
+                    except asyncio.CancelledError:
+                        pass
+                
                 # 停止看门狗监控
                 if self.watchdog and self.watchdog.is_running:
                     await self.watchdog.stop()
                 break
+    
+    async def _periodic_update_check(self):
+        """定时检查更新任务（每 5 小时）
+        
+        使用静默模式，不打印通知日志。
+        """
+        while True:
+            try:
+                # 等待检查间隔
+                await asyncio.sleep(CHECK_INTERVAL)
+                
+                logger.debug("[Updater] 执行定时更新检查...")
+                
+                # 静默检查更新
+                update_info = await self.updater.check_update(silent=True)
+                if update_info:
+                    logger.info(f"[Updater] 定时检查发现新版本: {update_info['latest_version']}")
+                    
+                    # 静默下载安装
+                    await self._download_update_background(update_info, silent=True)
+                
+            except asyncio.CancelledError:
+                logger.debug("[Updater] 定时检查任务已取消")
+                break
+            except Exception as e:
+                logger.error(f"[Updater] 定时检查出错: {e}")
+                # 继续下一次检查
+    
+    async def _execute_restart(self):
+        """执行重启
+        
+        延迟重启策略：
+        - 如果已超过 24 小时 → 立即重启
+        - 如果未到 24 小时 → 调度到次日 4:00
+        """
+        if not self._upgrade_state:
+            return
+        
+        # 清除升级状态
+        clear_state()
+        
+        # 获取重启命令并执行
+        restart_cmd = self.updater.get_restart_command()
+        logger.info(f"🔄 执行重启命令: {restart_cmd}")
+        
+        # 这里使用 os.execvp 或 subprocess 来重启
+        # 实际重启前记录日志
+        logger.info("客户端即将重启...")
+        
+        # 通过停止当前进程让 systemd/launchd 自动重启
+        # 或者执行重启脚本
+        import sys
+        sys.exit(0)  # 退出让外部服务重启
+    
+    async def _schedule_delayed_restart(self):
+        """调度延迟重启
+        
+        计算到次日 4:00 的延迟时间，设置定时器。
+        """
+        if not self._upgrade_state:
+            return
+        
+        delay_seconds = self._upgrade_state.get_restart_delay()
+        
+        if delay_seconds <= 0:
+            # 已超过重启时间，立即重启
+            logger.info("[Updater] 已超过重启窗口，立即重启")
+            await self._execute_restart()
+            return
+        
+        logger.info(f"[Updater] 计划在 {delay_seconds // 3600} 小时后重启")
+        
+        # 使用 asyncio.sleep 实现延迟
+        async def delayed_restart():
+            await asyncio.sleep(delay_seconds)
+            await self._execute_restart()
+        
+        asyncio.create_task(delayed_restart())
+        
     
     async def _init_watchdog(self):
         """初始化看门狗监控器
@@ -909,76 +1022,67 @@ OpenClaw Gateway 的认证配置不正确，导致请求被拒绝。
         except Exception as e:
             logger.error(f"[Watchdog] 发送告警失败: {e}")
     
-    async def _download_update_background(self, update_info: dict):
+    async def _download_update_background(self, update_info: dict, silent: bool = False):
         """后台下载更新
         
         不阻塞主循环，下载完成后等待合适时机重启。
         
         Args:
             update_info: 更新信息字典
+            silent: 静默模式，不打印通知日志
         """
         try:
-            logger.info("[Updater] 开始后台下载更新...")
+            if not silent:
+                logger.info("[Updater] 开始后台下载更新...")
             
-            # 下载更新包
-            filepath = await self.updater.download_update()
+            # 下载更新包（静默模式）
+            filepath = await self.updater.download_update(silent=silent)
             if not filepath:
-                logger.error("[Updater] 下载更新失败")
+                if not silent:
+                    logger.error("[Updater] 下载更新失败")
                 return
             
-            logger.info(f"[Updater] 更新已下载: {filepath}")
+            if not silent:
+                logger.info(f"[Updater] 更新已下载: {filepath}")
             
-            # 安装更新
-            success = await self.updater.install_update(filepath)
+            # 安装更新（静默模式）
+            success = await self.updater.install_update(filepath, silent=silent)
             if success:
-                logger.info("[Updater] 更新已安装，将在下次空闲时重启")
                 self._pending_update = update_info
                 
-                # 通知用户有更新待重启
-                logger.info("\n" + "="*60)
-                logger.info("✨ 新版本已安装，重启客户端生效")
-                logger.info(f"   {update_info['current_version']} → {update_info['latest_version']}")
-                logger.info(f"   重启命令: {self.updater.get_restart_command()}")
-                logger.info("="*60 + "\n")
+                # 保存升级状态（用于延迟重启）
+                self._upgrade_state = UpdateState(
+                    pending_update=True,
+                    download_progress=100,
+                    install_time=datetime.now().isoformat(),
+                    target_version=update_info['latest_version'],
+                    current_version=update_info['current_version']
+                )
+                save_state(self._upgrade_state)
+                
+                if not silent:
+                    # 非静默模式：显示重启提示
+                    logger.info("[Updater] 更新已安装，将在下次空闲时重启")
+                    logger.info("\n" + "="*60)
+                    logger.info("✨ 新版本已安装，重启客户端生效")
+                    logger.info(f"   {update_info['current_version']} → {update_info['latest_version']}")
+                    logger.info(f"   重启命令: {self.updater.get_restart_command()}")
+                    logger.info("="*60 + "\n")
+                else:
+                    # 静默模式：仅记录日志，调度延迟重启
+                    logger.info(f"[Updater] 静默升级完成: {update_info['current_version']} → {update_info['latest_version']}")
+                    logger.info("[Updater] 将在 24 小时后或次日 4:00 自动重启")
+                    
+                    # 调度延迟重启
+                    await self._schedule_delayed_restart()
             else:
-                logger.error("[Updater] 安装更新失败")
+                if not silent:
+                    logger.error("[Updater] 安装更新失败")
         except Exception as e:
             logger.error(f"[Updater] 后台更新失败: {e}")
-        """主循环，支持自动重连"""
-        # 检查更新（仅首次启动时）
-        update_info = await check_update()
-        if update_info:
-            logger.info(f"\n🔔 New version available: {update_info['latest_version']}")
-            logger.info(f"Download: {update_info['download_url']}\n")
+    
 
-        # 主循环：连接 -> 接收消息 -> 断开后重连
-        while True:
-            try:
-                # 带重连的连接
-                await self._connect_with_retry()
 
-                # 接收消息
-                receive_task = asyncio.create_task(self.receive_messages())
-
-                # 心跳循环
-                while self.connected:
-                    await asyncio.sleep(30)
-                    await self.check_status()
-
-                # 连接断开，取消接收任务
-                receive_task.cancel()
-                try:
-                    await receive_task
-                except asyncio.CancelledError:
-                    pass
-
-                logger.warning("🔄 连接已断开，准备重连...")
-                # 循环会自动进入下一次 _connect_with_retry
-
-            except asyncio.CancelledError:
-                # 被外部取消，退出循环
-                logger.info("客户端正在关闭...")
-                break
 
 
 async def main():
