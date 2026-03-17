@@ -39,8 +39,13 @@ DEFAULT_CONFIG_DIR = Path.home() / ".openclaw" / "wechat-channel"
 DEFAULT_UPDATE_DIR = DEFAULT_CONFIG_DIR / "updates"
 DEFAULT_VERSION_URL = "https://claw.7color.vip/channel-update/version.json"
 
-# 下载源列表（按优先级排序）
+# 下载源列表（按优先级排序：Gitee 国内推荐 → R2 CDN 全球加速 → GitHub 备用 → ECS 国内备用）
 DOWNLOAD_SOURCES = [
+    {
+        "name": "Gitee",
+        "base_url": "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release",
+        "version_url": "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/version.json"
+    },
     {
         "name": "R2 CDN",
         "base_url": "https://wechat.clawadmin.org/release",
