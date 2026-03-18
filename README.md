@@ -151,7 +151,7 @@ RELAY_URL=wss://你的服务器/ws-channel ~/.openclaw/wechat-channel/start.sh
 |---------|--------|------|
 | `OPENCLAW_URL` | `http://127.0.0.1:18789` | OpenClaw 服务地址 |
 | `RELAY_URL` | `wss://claw.7color.vip/ws-channel` | 中转服务地址 |
-| `INSTANCE_TYPE` | `bare` | 实例类型 |
+| `INSTANCE_TYPE` | `local` | 实例类型：`local`（本地裸机）/ `cloud`（云端 Docker）|
 
 ### 对话安装时弹出授权确认怎么办？
 

@@ -18,7 +18,8 @@ VERSION="1.4.0"
 PLUGIN_DIR="${PLUGIN_DIR:-$HOME/.openclaw/wechat-channel}"
 OPENCLAW_URL="${OPENCLAW_URL:-http://127.0.0.1:18789}"
 RELAY_URL="${RELAY_URL:-wss://claw.7color.vip/ws-channel}"
-INSTANCE_TYPE="${INSTANCE_TYPE:-bare}"
+INSTANCE_TYPE="${INSTANCE_TYPE:-local}"
+
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -93,11 +94,21 @@ download_client() {
     mkdir -p "$PLUGIN_DIR"
     
     # 尝试从多个源下载
+    # 需要下载的模块列表
+    local modules=("client.py" "requirements.txt" "watchdog.py" "updater.py" "types.py" "update_state.py")
+    
+    # 尝试从多个源下载
     for base_url in "${sources[@]}"; do
-        if curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
-               "$base_url/src/client.py" -o "$PLUGIN_DIR/client.py" 2>/dev/null && \
-           curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
-               "$base_url/requirements.txt" -o "$PLUGIN_DIR/requirements.txt" 2>/dev/null; then
+        local success=true
+        for module in "${modules[@]}"; do
+            if ! curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
+                   "$base_url/src/$module" -o "$PLUGIN_DIR/$module" 2>/dev/null; then
+                success=false
+                break
+            fi
+        done
+        
+        if $success; then
             print_success "客户端已下载到: $PLUGIN_DIR (来源: $base_url)"
             return 0
         fi
@@ -114,7 +125,24 @@ install_dependencies() {
     print_step "4/4" "安装依赖..."
     
     cd "$PLUGIN_DIR"
-    $PIP_CMD install -q -i https://pypi.tuna.tsinghua.edu.cn/simple websockets httpx 2>/dev/null || {
+    
+    # 创建虚拟环境（解决 Ubuntu 24.04 externally-managed-environment 问题）
+    if [ ! -d "$PLUGIN_DIR/venv" ]; then
+        $PYTHON_CMD -m venv "$PLUGIN_DIR/venv" || {
+            print_error "虚拟环境创建失败"
+            exit 1
+        }
+        print_success "虚拟环境已创建"
+    fi
+    
+    # 激活虚拟环境
+    source "$PLUGIN_DIR/venv/bin/activate" || {
+        print_error "虚拟环境激活失败"
+        exit 1
+    }
+    
+    # 安装依赖
+    pip install -q -i https://pypi.tuna.tsinghua.edu.cn/simple websockets httpx 2>/dev/null || {
         print_error "依赖安装失败"
         exit 1
     }
@@ -125,14 +153,20 @@ install_dependencies() {
 create_launcher() {
     cat > "$PLUGIN_DIR/start.sh" << LAUNCHER_EOF
 #!/bin/bash
-cd "$(dirname "\$0")"
-OPENCLAW_URL="\${OPENCLAW_URL:-$OPENCLAW_URL}"
-RELAY_URL="\${RELAY_URL:-$RELAY_URL}"
-INSTANCE_TYPE="\${INSTANCE_TYPE:-$INSTANCE_TYPE}"
+cd "$(dirname "$0")"
+OPENCLAW_URL="${OPENCLAW_URL:-$OPENCLAW_URL}"
+RELAY_URL="${RELAY_URL:-$RELAY_URL}"
+INSTANCE_TYPE="${INSTANCE_TYPE:-$INSTANCE_TYPE}"
+
+# 激活虚拟环境
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+
 echo "OpenClaw 微信频道客户端 v${VERSION}"
-echo "OpenClaw: \$OPENCLAW_URL"
-echo "中转服务: \$RELAY_URL"
-exec python3 client.py --openclaw-url "\$OPENCLAW_URL" --relay-url "\$RELAY_URL" --instance-type "\$INSTANCE_TYPE" "\$@"
+echo "OpenClaw: $OPENCLAW_URL"
+echo "中转服务: $RELAY_URL"
+exec python3 client.py --openclaw-url "$OPENCLAW_URL" --relay-url "$RELAY_URL" --instance-type "$INSTANCE_TYPE" "$@"
 LAUNCHER_EOF
     chmod +x "$PLUGIN_DIR/start.sh"
     

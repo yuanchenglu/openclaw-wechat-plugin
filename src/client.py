@@ -57,13 +57,15 @@ except ImportError:
     # 当作为脚本直接运行时
     from watchdog import WatchdogMonitor
     from updater import Updater
-    # 避免与内置 types 模块冲突
-    import sys
-    from pathlib import Path
-    _src_path = Path(__file__).parent
-    if str(_src_path) not in sys.path:
-        sys.path.insert(0, str(_src_path))
-    from types import CHECK_INTERVAL, RESTART_DELAY, RESTART_HOUR
+    # 避免与内置 types 模块冲突，使用 importlib 显式加载本地模块
+    import importlib.util
+    _types_path = Path(__file__).parent / "types.py"
+    _types_spec = importlib.util.spec_from_file_location("local_types", _types_path)
+    _local_types = importlib.util.module_from_spec(_types_spec)
+    _types_spec.loader.exec_module(_local_types)
+    CHECK_INTERVAL = _local_types.CHECK_INTERVAL
+    RESTART_DELAY = _local_types.RESTART_DELAY
+    RESTART_HOUR = _local_types.RESTART_HOUR
     from update_state import UpdateState, save_state, load_state, clear_state
 
 
