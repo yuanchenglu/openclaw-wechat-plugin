@@ -39,27 +39,29 @@ DEFAULT_CONFIG_DIR = Path.home() / ".openclaw" / "wechat-channel"
 DEFAULT_UPDATE_DIR = DEFAULT_CONFIG_DIR / "updates"
 DEFAULT_VERSION_URL = "https://claw.7color.vip/channel-update/version.json"
 
-# 下载源列表（按优先级排序：Gitee 国内推荐 → R2 CDN 全球加速 → GitHub 备用 → ECS 国内备用）
+# 下载源列表（按优先级排序：Gitee → GitHub → R2 CDN → ECS）
+# 注意：只有 Gitee 和 GitHub 有自动生成的 tag 包
+# R2 和 ECS 需要通过 GitHub Action 手动上传
 DOWNLOAD_SOURCES = [
     {
         "name": "Gitee",
-        "base_url": "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release",
-        "version_url": "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/version.json"
-    },
-    {
-        "name": "R2 CDN",
-        "base_url": "https://wechat.clawadmin.org/release",
-        "version_url": "https://wechat.clawadmin.org/release/version.json"
+        "version_url": "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/version.json",
+        "tag_archive_url": "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/repository/archive/v{version}.tar.gz"
     },
     {
         "name": "GitHub",
-        "base_url": "https://github.com/yuanchenglu/openclaw-wechat-plugin/releases/download",
-        "version_url": "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/version.json"
+        "version_url": "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/version.json",
+        "tag_archive_url": "https://github.com/yuanchenglu/openclaw-wechat-plugin/archive/refs/tags/v{version}.tar.gz"
+    },
+    {
+        "name": "R2 CDN",
+        "version_url": "https://wechat.clawadmin.org/release/version.json",
+        "tag_archive_url": None  # 需要手动上传
     },
     {
         "name": "ECS",
-        "base_url": "https://claw-wechat.7color.vip/release",
-        "version_url": "https://claw-wechat.7color.vip/release/version.json"
+        "version_url": "https://claw-wechat.7color.vip/release/version.json",
+        "tag_archive_url": None  # 需要手动上传
     }
 ]
 
@@ -152,9 +154,9 @@ class Updater:
                         if self.compare_versions(latest_version, self.current_version) > 0:
                             # 构建 download_url
                             download_url = data.get("download_url")
-                            if not download_url:
-                                # 从 base_url 构建
-                                download_url = f"{source['base_url']}/openclaw-wechat-channel-v{latest_version}.tar.gz"
+                            if not download_url and source.get("tag_archive_url"):
+                                # 使用 tag_archive_url 模板构建
+                                download_url = source["tag_archive_url"].format(version=latest_version)
                             
                             self._update_info = {
                                 "has_update": True,
@@ -206,11 +208,12 @@ class Updater:
         if self._update_info.get("fallback_url"):
             urls.append(self._update_info["fallback_url"])
         
-        # 为每个下载源构建 URL
+        # 为每个下载源构建 tag 包 URL（只有有 tag_archive_url 的源才构建）
         for source in DOWNLOAD_SOURCES:
-            url = f"{source['base_url']}/openclaw-wechat-channel-v{self._update_info['latest_version']}.tar.gz"
-            if url not in urls:
-                urls.append(url)
+            if source.get("tag_archive_url"):
+                url = source["tag_archive_url"].format(version=self._update_info['latest_version'])
+                if url not in urls:
+                    urls.append(url)
         
         for url in urls:
             try:

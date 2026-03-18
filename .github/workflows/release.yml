@@ -1,0 +1,195 @@
+# Release 发布时自动上传到 R2 和 ECS
+# 
+# 需要配置的 GitHub Secrets:
+# - CLOUDFLARE_API_TOKEN: Cloudflare API Token（需要 R2 读写权限）
+# - CLOUDFLARE_ACCOUNT_ID: Cloudflare Account ID
+# - R2_BUCKET_NAME: R2 bucket 名称（如：wechat-channel）
+# - ECS_SSH_KEY: ECS SSH 私钥
+# - ECS_HOST: ECS 主机地址
+# - ECS_USER: ECS 用户名
+#
+# R2 访问地址: https://wechat.clawadmin.org/release/
+# ECS 访问地址: https://claw-wechat.7color.vip/release/
+
+name: Release to R2 and ECS
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号（如 1.4.0）'
+        required: true
+        type: string
+
+env:
+  R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME || 'wechat-channel' }}
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            # 移除 v 前缀
+            VERSION="${VERSION#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 版本: $VERSION"
+
+      - name: Create release package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PACKAGE_NAME="openclaw-wechat-plugin-v${VERSION}"
+          
+          echo "📦 创建发布包: ${PACKAGE_NAME}.tar.gz"
+          
+          # 创建临时目录
+          mkdir -p /tmp/release/${PACKAGE_NAME}
+          
+          # 复制需要的文件
+          cp -r src/ /tmp/release/${PACKAGE_NAME}/
+          cp -r release/ /tmp/release/${PACKAGE_NAME}/
+          cp requirements.txt /tmp/release/${PACKAGE_NAME}/
+          cp README.md /tmp/release/${PACKAGE_NAME}/ 2>/dev/null || true
+          cp LICENSE /tmp/release/${PACKAGE_NAME}/ 2>/dev/null || true
+          
+          # 创建 tar.gz 包
+          cd /tmp/release
+          tar -czvf ${PACKAGE_NAME}.tar.gz ${PACKAGE_NAME}
+          
+          # 移动到工作目录
+          mv ${PACKAGE_NAME}.tar.gz $GITHUB_WORKSPACE/
+          
+          echo "✅ 发布包创建完成: ${PACKAGE_NAME}.tar.gz"
+          echo "package_name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
+          ls -lh $GITHUB_WORKSPACE/*.tar.gz
+
+      - name: Upload to R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd0a9c688290c80b51d6d4605ba32160a' }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PACKAGE_NAME="openclaw-wechat-plugin-v${VERSION}.tar.gz"
+          
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "⚠️ CLOUDFLARE_API_TOKEN 未配置，跳过 R2 上传"
+            exit 0
+          fi
+          
+          echo "🚀 上传到 R2: release/${PACKAGE_NAME}"
+          
+          # 安装 wrangler
+          npm install -g wrangler
+          
+          # 上传到 R2
+          wrangler r2 object put "${R2_BUCKET_NAME}/release/${PACKAGE_NAME}" \
+            --file="${PACKAGE_NAME}" \
+            --content-type="application/gzip"
+          
+          echo "✅ R2 上传完成"
+          echo "🔗 访问地址: https://wechat.clawadmin.org/release/${PACKAGE_NAME}"
+
+      - name: Upload to ECS
+        env:
+          ECS_SSH_KEY: ${{ secrets.ECS_SSH_KEY }}
+          ECS_HOST: ${{ secrets.ECS_HOST || '121.40.150.39' }}
+          ECS_USER: ${{ secrets.ECS_USER || 'root' }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PACKAGE_NAME="openclaw-wechat-plugin-v${VERSION}.tar.gz"
+          
+          if [ -z "$ECS_SSH_KEY" ]; then
+            echo "⚠️ ECS_SSH_KEY 未配置，跳过 ECS 上传"
+            exit 0
+          fi
+          
+          echo "🚀 上传到 ECS: /opt/wechat-channel/release/${PACKAGE_NAME}"
+          
+          # 设置 SSH 密钥
+          mkdir -p ~/.ssh
+          echo "$ECS_SSH_KEY" > ~/.ssh/ecs_key
+          chmod 600 ~/.ssh/ecs_key
+          
+          # 创建目标目录
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ecs_key ${ECS_USER}@${ECS_HOST} \
+            "mkdir -p /opt/wechat-channel/release"
+          
+          # 上传文件
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/ecs_key \
+            ${PACKAGE_NAME} \
+            ${ECS_USER}@${ECS_HOST}:/opt/wechat-channel/release/
+          
+          # 清理 SSH 密钥
+          rm -f ~/.ssh/ecs_key
+          
+          echo "✅ ECS 上传完成"
+          echo "🔗 访问地址: https://claw-wechat.7color.vip/release/${PACKAGE_NAME}"
+
+      - name: Update version.json
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd0a9c688290c80b51d6d4605ba32160a' }}
+          ECS_SSH_KEY: ${{ secrets.ECS_SSH_KEY }}
+          ECS_HOST: ${{ secrets.ECS_HOST || '121.40.150.39' }}
+          ECS_USER: ${{ secrets.ECS_USER || 'root' }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # 读取当前的 version.json
+          VERSION_JSON=$(cat release/version.json)
+          
+          # 更新 download_url
+          UPDATED_JSON=$(echo "$VERSION_JSON" | jq --arg v "$VERSION" \
+            '.download_url = "https://github.com/yuanchenglu/openclaw-wechat-plugin/archive/refs/tags/v\($v).tar.gz"')
+          
+          echo "$UPDATED_JSON" > /tmp/version.json
+          cat /tmp/version.json
+          
+          # 上传到 R2
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "🚀 更新 R2 version.json"
+            wrangler r2 object put "${R2_BUCKET_NAME}/release/version.json" \
+              --file=/tmp/version.json \
+              --content-type="application/json"
+          fi
+          
+          # 上传到 ECS
+          if [ -n "$ECS_SSH_KEY" ]; then
+            echo "🚀 更新 ECS version.json"
+            echo "$ECS_SSH_KEY" > ~/.ssh/ecs_key
+            chmod 600 ~/.ssh/ecs_key
+            
+            scp -o StrictHostKeyChecking=no -i ~/.ssh/ecs_key \
+              /tmp/version.json \
+              ${ECS_USER}@${ECS_HOST}:/opt/wechat-channel/release/
+            
+            rm -f ~/.ssh/ecs_key
+          fi
+          
+          echo "✅ version.json 更新完成"
+
+      - name: Summary
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "## 🎉 发布完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "版本: **v${VERSION}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 下载地址" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub: https://github.com/yuanchenglu/openclaw-wechat-plugin/archive/refs/tags/v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
+          echo "- R2 CDN: https://wechat.clawadmin.org/release/openclaw-wechat-plugin-v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
+          echo "- ECS: https://claw-wechat.7color.vip/release/openclaw-wechat-plugin-v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY

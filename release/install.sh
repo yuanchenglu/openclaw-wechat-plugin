@@ -95,8 +95,8 @@ download_client() {
     # 下载源列表（按优先级排序）
     local sources=(
         "https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main"
-        "https://wechat.clawadmin.org"
         "https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main"
+        "https://wechat.clawadmin.org"
         "https://claw-wechat.7color.vip"
     )
     
@@ -107,7 +107,8 @@ download_client() {
     local src_modules=("client.py" "watchdog.py" "updater.py" "wechat_types.py" "update_state.py")
     # 根目录下的配置文件
     local root_modules=("requirements.txt")
-    
+    # release 目录下的版本文件
+    local release_modules=("version.json")
     # 尝试从多个源下载
     for base_url in "${sources[@]}"; do
         local success=true
@@ -126,6 +127,17 @@ download_client() {
             for module in "${root_modules[@]}"; do
                 if ! curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
                        "$base_url/$module" -o "$PLUGIN_DIR/$module" 2>/dev/null; then
+                    success=false
+                    break
+                fi
+            done
+        fi
+        
+        # 如果根目录文件下载成功，继续下载 release 目录文件
+        if $success; then
+            for module in "${release_modules[@]}"; do
+                if ! curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
+                       "$base_url/release/$module" -o "$PLUGIN_DIR/$module" 2>/dev/null; then
                     success=false
                     break
                 fi
