@@ -177,7 +177,7 @@ install_dependencies() {
 create_launcher() {
     cat > "$PLUGIN_DIR/start.sh" << LAUNCHER_EOF
 #!/bin/bash
-cd "$(dirname "$0")"
+cd "\$(dirname "\$0")"
 OPENCLAW_URL="${OPENCLAW_URL:-$OPENCLAW_URL}"
 RELAY_URL="${RELAY_URL:-$RELAY_URL}"
 INSTANCE_TYPE="${INSTANCE_TYPE:-$INSTANCE_TYPE}"
