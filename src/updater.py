@@ -40,8 +40,7 @@ DEFAULT_UPDATE_DIR = DEFAULT_CONFIG_DIR / "updates"
 DEFAULT_VERSION_URL = "https://claw.7color.vip/channel-update/version.json"
 
 # 下载源列表（按优先级排序：Gitee → GitHub → R2 CDN → ECS）
-# 注意：只有 Gitee 和 GitHub 有自动生成的 tag 包
-# R2 和 ECS 需要通过 GitHub Action 手动上传
+# 所有源使用统一的文件名格式：v{version}.tar.gz
 DOWNLOAD_SOURCES = [
     {
         "name": "Gitee",
@@ -56,12 +55,12 @@ DOWNLOAD_SOURCES = [
     {
         "name": "R2 CDN",
         "version_url": "https://wechat.clawadmin.org/release/version.json",
-        "tag_archive_url": None  # 需要手动上传
+        "tag_archive_url": "https://wechat.clawadmin.org/release/v{version}.tar.gz"
     },
     {
         "name": "ECS",
         "version_url": "https://claw-wechat.7color.vip/release/version.json",
-        "tag_archive_url": None  # 需要手动上传
+        "tag_archive_url": "https://claw-wechat.7color.vip/release/v{version}.tar.gz"
     }
 ]
 

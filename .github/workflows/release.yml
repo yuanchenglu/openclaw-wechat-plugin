@@ -3,7 +3,7 @@
 # 需要配置的 GitHub Secrets:
 # - CLOUDFLARE_API_TOKEN: Cloudflare API Token（需要 R2 读写权限）
 # - CLOUDFLARE_ACCOUNT_ID: Cloudflare Account ID
-# - R2_BUCKET_NAME: R2 bucket 名称（如：wechat-channel）
+# - R2_BUCKET_NAME: R2 bucket 名称（如：foralluser）
 # - ECS_SSH_KEY: ECS SSH 私钥
 # - ECS_HOST: ECS 主机地址
 # - ECS_USER: ECS 用户名
@@ -24,7 +24,7 @@ on:
         type: string
 
 env:
-  R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME || 'wechat-channel' }}
+  R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME || 'foralluser' }}
 
 jobs:
   build-and-upload:
@@ -52,29 +52,29 @@ jobs:
       - name: Create release package
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          PACKAGE_NAME="openclaw-wechat-plugin-v${VERSION}"
+          PACKAGE_DIR="openclaw-wechat-plugin-v${VERSION}"
+          ARCHIVE_NAME="v${VERSION}.tar.gz"
           
-          echo "📦 创建发布包: ${PACKAGE_NAME}.tar.gz"
+          echo "📦 创建发布包: ${ARCHIVE_NAME}"
           
           # 创建临时目录
-          mkdir -p /tmp/release/${PACKAGE_NAME}
+          mkdir -p /tmp/release/${PACKAGE_DIR}
           
           # 复制需要的文件
-          cp -r src/ /tmp/release/${PACKAGE_NAME}/
-          cp -r release/ /tmp/release/${PACKAGE_NAME}/
-          cp requirements.txt /tmp/release/${PACKAGE_NAME}/
-          cp README.md /tmp/release/${PACKAGE_NAME}/ 2>/dev/null || true
-          cp LICENSE /tmp/release/${PACKAGE_NAME}/ 2>/dev/null || true
+          cp -r src/ /tmp/release/${PACKAGE_DIR}/
+          cp -r release/ /tmp/release/${PACKAGE_DIR}/
+          cp requirements.txt /tmp/release/${PACKAGE_DIR}/
+          cp README.md /tmp/release/${PACKAGE_DIR}/ 2>/dev/null || true
+          cp LICENSE /tmp/release/${PACKAGE_DIR}/ 2>/dev/null || true
           
-          # 创建 tar.gz 包
+          # 创建 tar.gz 包（文件名统一为 v{version}.tar.gz）
           cd /tmp/release
-          tar -czvf ${PACKAGE_NAME}.tar.gz ${PACKAGE_NAME}
+          tar -czvf ${ARCHIVE_NAME} ${PACKAGE_DIR}
           
           # 移动到工作目录
-          mv ${PACKAGE_NAME}.tar.gz $GITHUB_WORKSPACE/
+          mv ${ARCHIVE_NAME} $GITHUB_WORKSPACE/
           
-          echo "✅ 发布包创建完成: ${PACKAGE_NAME}.tar.gz"
-          echo "package_name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "✅ 发布包创建完成: ${ARCHIVE_NAME}"
           ls -lh $GITHUB_WORKSPACE/*.tar.gz
 
       - name: Upload to R2
@@ -83,25 +83,25 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd0a9c688290c80b51d6d4605ba32160a' }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          PACKAGE_NAME="openclaw-wechat-plugin-v${VERSION}.tar.gz"
+          ARCHIVE_NAME="v${VERSION}.tar.gz"
           
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "⚠️ CLOUDFLARE_API_TOKEN 未配置，跳过 R2 上传"
             exit 0
           fi
           
-          echo "🚀 上传到 R2: release/${PACKAGE_NAME}"
+          echo "🚀 上传到 R2: release/${ARCHIVE_NAME}"
           
           # 安装 wrangler
           npm install -g wrangler
           
           # 上传到 R2
-          wrangler r2 object put "${R2_BUCKET_NAME}/release/${PACKAGE_NAME}" \
-            --file="${PACKAGE_NAME}" \
+          wrangler r2 object put "${R2_BUCKET_NAME}/release/${ARCHIVE_NAME}" \
+            --file="${ARCHIVE_NAME}" \
             --content-type="application/gzip"
           
           echo "✅ R2 上传完成"
-          echo "🔗 访问地址: https://wechat.clawadmin.org/release/${PACKAGE_NAME}"
+          echo "🔗 访问地址: https://wechat.clawadmin.org/release/${ARCHIVE_NAME}"
 
       - name: Upload to ECS
         env:
@@ -110,14 +110,14 @@ jobs:
           ECS_USER: ${{ secrets.ECS_USER || 'root' }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          PACKAGE_NAME="openclaw-wechat-plugin-v${VERSION}.tar.gz"
+          ARCHIVE_NAME="v${VERSION}.tar.gz"
           
           if [ -z "$ECS_SSH_KEY" ]; then
             echo "⚠️ ECS_SSH_KEY 未配置，跳过 ECS 上传"
             exit 0
           fi
           
-          echo "🚀 上传到 ECS: /opt/wechat-channel/release/${PACKAGE_NAME}"
+          echo "🚀 上传到 ECS: /www/wwwroot/claw-wechat.7color.vip/release/${ARCHIVE_NAME}"
           
           # 设置 SSH 密钥
           mkdir -p ~/.ssh
@@ -126,18 +126,18 @@ jobs:
           
           # 创建目标目录
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/ecs_key ${ECS_USER}@${ECS_HOST} \
-            "mkdir -p /opt/wechat-channel/release"
+            "mkdir -p /www/wwwroot/claw-wechat.7color.vip/release"
           
           # 上传文件
           scp -o StrictHostKeyChecking=no -i ~/.ssh/ecs_key \
-            ${PACKAGE_NAME} \
-            ${ECS_USER}@${ECS_HOST}:/opt/wechat-channel/release/
+            ${ARCHIVE_NAME} \
+            ${ECS_USER}@${ECS_HOST}:/www/wwwroot/claw-wechat.7color.vip/release/
           
           # 清理 SSH 密钥
           rm -f ~/.ssh/ecs_key
           
           echo "✅ ECS 上传完成"
-          echo "🔗 访问地址: https://claw-wechat.7color.vip/release/${PACKAGE_NAME}"
+          echo "🔗 访问地址: https://claw-wechat.7color.vip/release/${ARCHIVE_NAME}"
 
       - name: Update version.json
         env:
@@ -175,7 +175,7 @@ jobs:
             
             scp -o StrictHostKeyChecking=no -i ~/.ssh/ecs_key \
               /tmp/version.json \
-              ${ECS_USER}@${ECS_HOST}:/opt/wechat-channel/release/
+              ${ECS_USER}@${ECS_HOST}:/www/wwwroot/claw-wechat.7color.vip/release/
             
             rm -f ~/.ssh/ecs_key
           fi
@@ -191,5 +191,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 下载地址" >> $GITHUB_STEP_SUMMARY
           echo "- GitHub: https://github.com/yuanchenglu/openclaw-wechat-plugin/archive/refs/tags/v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
-          echo "- R2 CDN: https://wechat.clawadmin.org/release/openclaw-wechat-plugin-v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
-          echo "- ECS: https://claw-wechat.7color.vip/release/openclaw-wechat-plugin-v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
+          echo "- R2 CDN: https://wechat.clawadmin.org/release/v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
+          echo "- ECS: https://claw-wechat.7color.vip/release/v${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
