@@ -190,7 +190,7 @@ fi
 echo "OpenClaw 微信频道客户端 v${VERSION}"
 echo "OpenClaw: $OPENCLAW_URL"
 echo "中转服务: $RELAY_URL"
-exec python3 client.py --openclaw-url "$OPENCLAW_URL" --relay-url "$RELAY_URL" --instance-type "$INSTANCE_TYPE" "$@"
+exec python3 client.py --openclaw-url "$OPENCLAW_URL" --relay-url "$RELAY_URL" --instance-type "$INSTANCE_TYPE" "\$@"
 LAUNCHER_EOF
     chmod +x "$PLUGIN_DIR/start.sh"
     
