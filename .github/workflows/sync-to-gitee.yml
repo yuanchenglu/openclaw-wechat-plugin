@@ -1,0 +1,61 @@
+# 同步仓库到 Gitee（国内镜像）
+# 每次 push 到 main 分支时，自动同步到 Gitee
+#
+# 需要配置的 GitHub Secrets:
+# - GITEE_TOKEN: Gitee 私人令牌（需要 projects 权限）
+#
+# 获取 Gitee Token 步骤：
+# 1. 登录 Gitee → 设置 → 私人令牌
+# 2. 生成新令牌，勾选 projects 权限
+# 3. 复制令牌到 GitHub 仓库的 Secrets 中
+
+name: Sync to Gitee
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # 支持手动触发
+
+env:
+  # Gitee 仓库地址（请根据实际情况修改）
+  GITEE_REPO: yuanchenglu/openclaw-wechat-plugin
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史，确保可以强制推送
+
+      - name: Sync to Gitee
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          echo "🚀 开始同步到 Gitee..."
+
+          # 配置 Git
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # 添加 Gitee 远程仓库
+          git remote add gitee https://oauth2:${GITEE_TOKEN}@gitee.com/${GITEE_REPO}.git
+
+          # 获取所有分支
+          git fetch --all
+
+          # 推送所有分支到 Gitee
+          echo "📦 推送所有分支..."
+          git push gitee --all --force
+
+          # 推送所有标签到 Gitee
+          echo "🏷️ 推送所有标签..."
+          git push gitee --tags --force
+
+          # 清理远程仓库配置（安全措施）
+          git remote remove gitee
+
+          echo "✅ 同步完成！"
+          echo "🔗 Gitee 地址: https://gitee.com/${GITEE_REPO}"
