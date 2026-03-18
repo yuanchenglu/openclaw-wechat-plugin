@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>需求文档导航 - 微信频道插件</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 40px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .status-done { color: green; font-weight: bold; }
+        .status-progress { color: orange; }
+        .status-pending { color: gray; }
+        a { color: #2196F3; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .update-time { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 需求文档导航</h1>
+        <p class="update-time">最后更新: 2026-03-18</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>模块名称</th>
+                    <th>文档路径</th>
+                    <th>版本</th>
+                    <th>更新时间</th>
+                    <th>Commit</th>
+                    <th>进度</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>微信频道插件需求</td>
+                    <td><a href="./10_Design/微信频道插件需求文档.md">10_Design/微信频道插件需求文档.md</a></td>
+                    <td>v1.4.1</td>
+                    <td>2026-03-18</td>
+                    <td><a href="#">(待提交)</a></td>
+                    <td class="status-done">✅ 完成</td>
+                </tr>
+                <tr>
+                    <td>安装脚本修复</td>
+                    <td><a href="./30_Changelogs/FIX-20260318-安装脚本修复/changelog.md">30_Changelogs/FIX-20260318-安装脚本修复/</a></td>
+                    <td>v1.4.1</td>
+                    <td>2026-03-18</td>
+                    <td><a href="#">(待提交)</a></td>
+                    <td class="status-done">✅ 完成</td>
+                </tr>
+                <tr>
+                    <td>安装日志</td>
+                    <td><a href="./wechat-plugin-install-log-20260318.md">wechat-plugin-install-log-20260318.md</a></td>
+                    <td>-</td>
+                    <td>2026-03-18</td>
+                    <td>-</td>
+                    <td class="status-done">✅ 归档</td>
+                </tr>
+                <tr>
+                    <td>问题深度分析</td>
+                    <td><a href="./install-script-analysis-20260318.md">install-script-analysis-20260318.md</a></td>
+                    <td>-</td>
+                    <td>2026-03-18</td>
+                    <td>-</td>
+                    <td class="status-done">✅ 归档</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

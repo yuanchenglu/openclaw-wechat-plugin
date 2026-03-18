@@ -4,13 +4,22 @@
 # ============================================================================
 # 
 # 使用方法：
-#   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | bash
 #   
+#   注意：必须使用 bash 执行，不能使用 sh
+#
 # 或指定配置：
-#   OPENCLAW_URL=http://127.0.0.1:18789 curl -fsSL ... | sh
+#   OPENCLAW_URL=http://127.0.0.1:18789 curl -fsSL ... | bash
 #
 # 支持系统：macOS, Linux, Windows (WSL)
 # ============================================================================
+
+# 检测是否使用 bash 执行
+if [ -z "$BASH_VERSION" ]; then
+    echo "错误: 请使用 bash 执行此脚本，而不是 sh"
+    echo "正确用法: curl -fsSL ... | bash"
+    exit 1
+fi
 
 set -e
 
@@ -93,20 +102,35 @@ download_client() {
     
     mkdir -p "$PLUGIN_DIR"
     
-    # 尝试从多个源下载
-    # 需要下载的模块列表
-    local modules=("client.py" "requirements.txt" "watchdog.py" "updater.py" "types.py" "update_state.py")
+    # 需要下载的模块列表（区分 src 目录和根目录）
+    # src 目录下的 Python 模块
+    local src_modules=("client.py" "watchdog.py" "updater.py" "wechat_types.py" "update_state.py")
+    # 根目录下的配置文件
+    local root_modules=("requirements.txt")
     
     # 尝试从多个源下载
     for base_url in "${sources[@]}"; do
         local success=true
-        for module in "${modules[@]}"; do
+        
+        # 下载 src 目录下的模块
+        for module in "${src_modules[@]}"; do
             if ! curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
                    "$base_url/src/$module" -o "$PLUGIN_DIR/$module" 2>/dev/null; then
                 success=false
                 break
             fi
         done
+        
+        # 如果 src 模块下载成功，继续下载根目录文件
+        if $success; then
+            for module in "${root_modules[@]}"; do
+                if ! curl -fsSL --connect-timeout 10 --max-time 30 --retry 2 \
+                       "$base_url/$module" -o "$PLUGIN_DIR/$module" 2>/dev/null; then
+                    success=false
+                    break
+                fi
+            done
+        fi
         
         if $success; then
             print_success "客户端已下载到: $PLUGIN_DIR (来源: $base_url)"

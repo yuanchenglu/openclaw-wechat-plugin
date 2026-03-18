@@ -28,13 +28,13 @@
 
    macOS/Linux:
    # 方式一（Gitee，国内推荐）
-   curl -fsSL https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.sh | sh
+   curl -fsSL https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.sh | bash
    # 方式二（Cloudflare CDN，全球加速）
-   curl -fsSL https://wechat.clawadmin.org/release/install.sh | sh
+   curl -fsSL https://wechat.clawadmin.org/release/install.sh | bash
    # 方式三（GitHub 备用）
-   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+   curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | bash
    # 方式四（国内备用）
-   curl -fsSL https://claw-wechat.7color.vip/release/install.sh | sh
+   curl -fsSL https://claw-wechat.7color.vip/release/install.sh | bash
     
    Windows PowerShell:
    # 方式一（Gitee，国内推荐）
@@ -69,16 +69,16 @@
 **macOS / Linux：**
 ```bash
 # 推荐（Gitee，国内用户首选）
-curl -fsSL https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.sh | sh
+curl -fsSL https://gitee.com/yuanchenglu/openclaw-wechat-plugin/raw/main/release/install.sh | bash
 
 # 备用（Cloudflare CDN，全球加速）
-curl -fsSL https://wechat.clawadmin.org/release/install.sh | sh
+curl -fsSL https://wechat.clawadmin.org/release/install.sh | bash
 
 # 备用（GitHub）
-curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/yuanchenglu/openclaw-wechat-plugin/main/release/install.sh | bash
 
 # 备用（国内）
-curl -fsSL https://claw-wechat.7color.vip/release/install.sh | sh
+curl -fsSL https://claw-wechat.7color.vip/release/install.sh | bash
 ```
 
 **Windows PowerShell：**

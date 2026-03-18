@@ -51,7 +51,7 @@ from datetime import datetime
 try:
     from .watchdog import WatchdogMonitor
     from .updater import Updater
-    from .types import CHECK_INTERVAL, RESTART_DELAY, RESTART_HOUR
+    from .wechat_types import CHECK_INTERVAL, RESTART_DELAY, RESTART_HOUR
     from .update_state import UpdateState, save_state, load_state, clear_state
 except ImportError:
     # 当作为脚本直接运行时
@@ -59,8 +59,8 @@ except ImportError:
     from updater import Updater
     # 避免与内置 types 模块冲突，使用 importlib 显式加载本地模块
     import importlib.util
-    _types_path = Path(__file__).parent / "types.py"
-    _types_spec = importlib.util.spec_from_file_location("local_types", _types_path)
+    _types_path = Path(__file__).parent / "wechat_types.py"
+    _types_spec = importlib.util.spec_from_file_location("wechat_types", _types_path)
     _local_types = importlib.util.module_from_spec(_types_spec)
     _types_spec.loader.exec_module(_local_types)
     CHECK_INTERVAL = _local_types.CHECK_INTERVAL
