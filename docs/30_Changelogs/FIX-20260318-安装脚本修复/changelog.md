@@ -157,6 +157,8 @@ bash 执行脚本 ◀── 检测 $BASH_VERSION
 
 | Commit | 说明 |
 |--------|------|
+| [1975680](https://github.com/yuanchenglu/openclaw-wechat-plugin/commit/1975680) | FIX: 修复安装脚本三个阻塞性Bug |
+|--------|------|
 | (待提交) | FIX: 修复安装脚本三个阻塞性Bug |
 
 ---
@@ -164,4 +166,5 @@ bash 执行脚本 ◀── 检测 $BASH_VERSION
 ## 相关文档
 
 - [需求文档](../10_Design/微信频道插件需求文档.md)
+- [安装脚本问题深度分析报告](../install-script-analysis-20260318.md)
 - [安装脚本问题深度分析报告](../../../.sisyphus/install-script-analysis-20260318.md)
