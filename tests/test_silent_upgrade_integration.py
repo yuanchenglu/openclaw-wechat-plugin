@@ -22,7 +22,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # 导入被测试模块
-from src import types as plugin_types
+from src import wechat_types as plugin_types
+
 from src.update_state import UpdateState, save_state, load_state, clear_state
 from src.updater import Updater
 
@@ -993,9 +994,8 @@ class TestUpdaterCoverage:
             
             result = await updater.check_update(silent=True)
             
-            assert result is not None
-            # 验证 URL 被正确构建
-            assert "openclaw-wechat-channel-v1.3.0.tar.gz" in result["download_url"]
+            # 验证 URL 被正确构建（文件名格式为 v{version}.tar.gz）
+            assert "v1.3.0.tar.gz" in result["download_url"]
     
     def test_compare_versions_with_invalid_input(self, temp_config_dir):
         """测试版本比较的异常处理"""

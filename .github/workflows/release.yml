@@ -152,10 +152,8 @@ jobs:
           # 读取当前的 version.json
           VERSION_JSON=$(cat release/version.json)
           
-          # 更新 download_url
-          UPDATED_JSON=$(echo "$VERSION_JSON" | jq --arg v "$VERSION" \
-            '.download_url = "https://github.com/yuanchenglu/openclaw-wechat-plugin/archive/refs/tags/v\($v).tar.gz"')
-          
+          # 直接使用 version.json（updater.py 会根据 version 字段动态构建下载 URL）
+          UPDATED_JSON="$VERSION_JSON"
           echo "$UPDATED_JSON" > /tmp/version.json
           cat /tmp/version.json
           

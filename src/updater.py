@@ -151,10 +151,10 @@ class Updater:
                         latest_version = data.get("version", "0.0.0")
                         
                         if self.compare_versions(latest_version, self.current_version) > 0:
-                            # 构建 download_url
-                            download_url = data.get("download_url")
-                            if not download_url and source.get("tag_archive_url"):
-                                # 使用 tag_archive_url 模板构建
+                            # 始终根据 latest_version 动态构建 download_url
+                            # 不依赖 version.json 中的 download_url（避免版本号不一致）
+                            download_url = None
+                            if source.get("tag_archive_url"):
                                 download_url = source["tag_archive_url"].format(version=latest_version)
                             
                             self._update_info = {

@@ -2,7 +2,6 @@
   "version": "1.4.0",
   "release_date": "2026-03-17",
   "min_server_version": "1.0.0",
-  "download_url": "https://github.com/yuanchenglu/openclaw-wechat-plugin/archive/refs/tags/v1.4.0.tar.gz",
   "changelog": [
     "新增: 看门狗心跳监控（超时自动告警）",
     "新增: 静默自动更新（三级容错下载）",
