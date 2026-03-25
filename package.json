@@ -1,0 +1,51 @@
+{
+  "name": "@openclaw/wechat-service",
+  "version": "2026.3.25",
+  "private": true,
+  "description": "OpenClaw WeChat Service Account channel plugin",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "openclaw",
+    "wechat",
+    "plugin"
+  ],
+  "author": "七彩科技",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/ws": "^8.5.10",
+    "openclaw": "^2026.3.23-2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "wechat-service",
+      "label": "WeChat Service Account",
+      "selectionLabel": "WeChat Service Account (公众号)",
+      "detailLabel": "WeChat Service Account",
+      "docsPath": "/channels/wechat-service",
+      "docsLabel": "wechat-service",
+      "blurb": "Connect your WeChat Service Account to OpenClaw for AI-powered conversations.",
+      "systemImage": "message"
+    },
+    "bundle": {
+      "stageRuntimeDependencies": true
+    }
+  }
+}

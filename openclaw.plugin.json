@@ -1,0 +1,18 @@
+{
+  "id": "wechat-service",
+  "channels": ["wechat-service"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "relayUrl": {
+        "type": "string",
+        "description": "WebSocket relay server URL"
+      },
+      "clientId": {
+        "type": "string",
+        "description": "Client identifier for the connection"
+      }
+    }
+  }
+}
