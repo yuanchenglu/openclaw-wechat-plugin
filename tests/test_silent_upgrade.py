@@ -20,7 +20,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # 使用别名导入避免与内置 types 模块冲突
-from src import types as plugin_types
+from src import wechat_types as plugin_types
 from src.update_state import UpdateState, save_state, load_state, clear_state
 from src.updater import Updater
 

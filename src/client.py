@@ -92,6 +92,41 @@ def load_version() -> str:
     
     return "0.0.0"  # 默认版本
 
+
+def get_openclaw_auth_token() -> Optional[str]:
+    """从 ~/.openclaw/openclaw.json 读取 gateway.auth.token
+    
+    自动读取 OpenClaw Gateway 的认证 token，用于 API 调用。
+    如果 gateway.auth.mode 不是 "token"，返回 None。
+    
+    Returns:
+        Optional[str]: token 字符串，或 None
+    """
+    config_path = Path.home() / ".openclaw" / "openclaw.json"
+    
+    if not config_path.exists():
+        return None
+    
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        gateway = data.get("gateway", {})
+        auth = gateway.get("auth", {})
+        
+        # 只有当 auth.mode 为 "token" 时才返回 token
+        if auth.get("mode") == "token":
+            token = auth.get("token")
+            if token:
+                logger.debug(f"[Auth] 已从 OpenClaw 配置读取 token")
+                return token
+        
+        return None
+    except Exception as e:
+        logger.debug(f"[Auth] 读取 OpenClaw 配置失败: {e}")
+        return None
+
+
 # 版本信息
 CLIENT_VERSION = load_version()
 MIN_SERVER_VERSION = "1.0.0"
@@ -399,7 +434,8 @@ class OpenClawWeChatClient:
         self.openclaw_url = openclaw_url.rstrip("/")
         self.relay_url = relay_url
         self.instance_type = instance_type
-        self.api_key = api_key
+        # 如果未传入 api_key，自动从 OpenClaw 配置读取
+        self.api_key = api_key if api_key else get_openclaw_auth_token()
 
         # 本地配置
         self.config = LocalConfig(config_dir)

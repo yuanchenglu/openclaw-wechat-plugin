@@ -79,6 +79,7 @@ function Download-Client {
     # 尝试从多个源下载
     $downloaded = $false
     foreach ($baseUrl in $sources) {
+        Write-Host "正在从 $baseUrl 下载..." -ForegroundColor Cyan
         $clientUrl = "$baseUrl/src/client.py"
         $requirementsUrl = "$baseUrl/requirements.txt"
         

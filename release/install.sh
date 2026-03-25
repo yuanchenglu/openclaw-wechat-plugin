@@ -111,6 +111,7 @@ download_client() {
     local release_modules=("version.json")
     # 尝试从多个源下载
     for base_url in "${sources[@]}"; do
+        echo "正在从 $base_url 下载..."
         local success=true
         
         # 下载 src 目录下的模块

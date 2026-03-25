@@ -28,11 +28,12 @@ OpenClaw 微信频道插件 - 升级状态持久化模块
 
 import json
 import logging
+import datetime as datetime_module  # 导入整个模块以便测试 mock
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
+# 注意：直接使用 datetime_module.datetime 和 datetime_module.timedelta 以便测试 mock
 # 配置日志
 logger = logging.getLogger(__name__)
 
@@ -101,14 +102,14 @@ class UpdateState:
             return False
         
         try:
-            install_dt = datetime.fromisoformat(self.install_time)
-            now = datetime.now()
+            install_dt = datetime_module.datetime.fromisoformat(self.install_time)
+            now = datetime_module.datetime.now()
             
             # 计算距离安装的时间
             elapsed = now - install_dt
             
             # 超过 24 小时，需要重启
-            if elapsed >= timedelta(hours=RESTART_DELAY_HOURS):
+            if elapsed >= datetime_module.timedelta(hours=RESTART_DELAY_HOURS):
                 return True
             
             # 未到 24 小时，检查是否到达次日 4:00
@@ -121,7 +122,7 @@ class UpdateState:
             logger.error(f"解析安装时间失败: {e}")
             return False
     
-    def _calculate_next_restart_time(self, install_dt: datetime) -> datetime:
+    def _calculate_next_restart_time(self, install_dt: datetime_module.datetime) -> datetime_module.datetime:
         """
         计算下一次重启时间（次日4:00或更后）
         
@@ -132,7 +133,7 @@ class UpdateState:
             下一次重启时间
         """
         # 安装时间的次日
-        next_day = install_dt + timedelta(days=1)
+        next_day = install_dt + datetime_module.timedelta(days=1)
         
         # 次日 4:00
         restart_time = next_day.replace(
@@ -158,12 +159,12 @@ class UpdateState:
             return -1
         
         try:
-            install_dt = datetime.fromisoformat(self.install_time)
-            now = datetime.now()
+            install_dt = datetime_module.datetime.fromisoformat(self.install_time)
+            now = datetime_module.datetime.now()
             
             # 已经超过 24 小时
             elapsed = now - install_dt
-            if elapsed >= timedelta(hours=RESTART_DELAY_HOURS):
+            if elapsed >= datetime_module.timedelta(hours=RESTART_DELAY_HOURS):
                 return 0
             
             # 计算到重启时间的剩余秒数
@@ -188,11 +189,10 @@ class UpdateState:
             current_version: 当前版本号
         """
         self.pending_update = True
-        self.install_time = datetime.now().isoformat()
+        self.install_time = datetime_module.datetime.now().isoformat()
         self.target_version = target_version
         self.current_version = current_version
         self.download_progress = 100
-    
     def clear(self) -> None:
         """清除更新状态（重启完成后调用）"""
         self.pending_update = False

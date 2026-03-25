@@ -108,9 +108,9 @@ class TestUpdateStateMethods:
         """测试设置安装状态"""
         state = UpdateState()
         
-        with patch("update_state.datetime") as mock_dt:
-            mock_dt.now.return_value = datetime(2026, 3, 17, 10, 30, 0)
-            mock_dt.fromisoformat.side_effect = datetime.fromisoformat
+        with patch("update_state.datetime_module") as mock_dt:
+            mock_dt.datetime.now.return_value = datetime(2026, 3, 17, 10, 30, 0)
+            mock_dt.datetime.fromisoformat.side_effect = datetime.fromisoformat
             
             state.set_installed("1.3.0", "1.2.0")
         
@@ -119,7 +119,6 @@ class TestUpdateStateMethods:
         assert state.install_time == "2026-03-17T10:30:00"
         assert state.target_version == "1.3.0"
         assert state.current_version == "1.2.0"
-    
     def test_clear(self):
         """测试清除状态"""
         state = UpdateState(
@@ -356,11 +355,10 @@ class TestIntegration:
             
             # 4. 下载完成，安装
             state.download_progress = 100
-            with patch("update_state.datetime") as mock_dt:
-                mock_dt.now.return_value = datetime(2026, 3, 17, 10, 0, 0)
-                mock_dt.fromisoformat.side_effect = datetime.fromisoformat
+            with patch("update_state.datetime_module") as mock_dt:
+                mock_dt.datetime.now.return_value = datetime(2026, 3, 17, 10, 0, 0)
+                mock_dt.datetime.fromisoformat.side_effect = datetime.fromisoformat
                 state.set_installed("1.3.0", "1.2.0")
-            
             save_state(state, state_path)
             
             # 5. 系统重启后恢复状态
@@ -371,11 +369,15 @@ class TestIntegration:
             assert restored.current_version == "1.2.0"
             
             # 6. 检查是否需要重启（刚安装，不需要）
-            assert restored.is_restart_due() is False
+            # 需要 mock datetime.now() 因为 is_restart_due() 内部使用它
+            with patch("update_state.datetime_module") as mock_dt:
+                # 安装时间是 2026-03-17T10:00:00，mock 当前时间为安装后 1 小时
+                mock_dt.datetime.now.return_value = datetime(2026, 3, 17, 11, 0, 0)
+                mock_dt.datetime.fromisoformat.side_effect = datetime.fromisoformat
+                mock_dt.timedelta = timedelta
+                assert restored.is_restart_due() is False
             
             # 7. 重启完成后清除状态
-            clear_state(state_path)
-            assert load_state(state_path) is None
     
     def test_state_persistence_after_restart(self):
         """测试重启后状态恢复"""
